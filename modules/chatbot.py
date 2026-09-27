@@ -2938,6 +2938,325 @@ def reference_slip_popup():
             width: 100% !important;
         }
 
+
+        /* ==========================================================
+           HARD MOBILE FIX
+           Streamlit columns need explicit mobile stacking.
+           ========================================================== */
+        @media only screen and (max-width: 768px) {
+            html, body, [data-testid="stAppViewContainer"], [data-testid="stAppViewContainer"] > section {
+                width: 100% !important;
+                max-width: 100% !important;
+                overflow-x: hidden !important;
+            }
+
+            .main .block-container,
+            [data-testid="stAppViewContainer"] .main .block-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 8px 6px 80px !important;
+                margin: 0 !important;
+            }
+
+            /* The FIRST horizontal block inside main_layout is the
+               Chat + My Cart row. Force that row to become vertical. */
+            .st-key-main_layout > div > [data-testid="stHorizontalBlock"] {
+                display: block !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .st-key-main_layout > div > [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+                display: block !important;
+                width: 100% !important;
+                min-width: 100% !important;
+                max-width: 100% !important;
+                flex: none !important;
+                margin: 0 0 14px 0 !important;
+            }
+
+            .st-key-main_layout > div > [data-testid="stHorizontalBlock"] > [data-testid="column"] > div {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            /* Prevent long medicine/order text from creating horizontal scroll. */
+            .st-key-main_layout * {
+                max-width: 100% !important;
+                overflow-wrap: anywhere !important;
+                word-break: break-word !important;
+            }
+
+            .st-key-chat_area {
+                width: 100% !important;
+                height: 55vh !important;
+                max-height: 55vh !important;
+                min-height: 320px !important;
+                overflow-x: hidden !important;
+            }
+
+            .st-key-cart_area {
+                width: 100% !important;
+                min-height: 0 !important;
+                margin-top: 0 !important;
+            }
+
+            .st-key-cart_items_area {
+                width: 100% !important;
+                max-height: 320px !important;
+                overflow-x: hidden !important;
+            }
+
+            .medicine-card {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .st-key-chat_input_bar {
+                width: 100% !important;
+                max-width: 100% !important;
+                position: sticky !important;
+                bottom: 4px !important;
+            }
+
+            .st-key-chat_input_bar input {
+                min-width: 0 !important;
+                width: 100% !important;
+                font-size: 14px !important;
+            }
+
+            div[data-testid="stDialog"] {
+                width: 100vw !important;
+                max-width: 100vw !important;
+            }
+
+            div[data-testid="stDialog"] > div {
+                width: calc(100vw - 12px) !important;
+                max-width: calc(100vw - 12px) !important;
+                max-height: 94vh !important;
+                margin: 0 auto !important;
+                padding-left: 6px !important;
+                padding-right: 6px !important;
+            }
+
+            div[data-testid="stDialog"] [data-testid="stCustomComponentV1"] {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+        }
+
+        /* ==========================================================
+           PHONE LANDSCAPE / TABLET LANDSCAPE
+           Keep Chat + My Cart side-by-side and fit them inside the
+           short landscape viewport.
+           ========================================================== */
+        @media only screen and (orientation: landscape) and (max-height: 700px) and (max-width: 1100px) {
+            html, body, [data-testid="stAppViewContainer"],
+            [data-testid="stAppViewContainer"] > section {
+                width: 100% !important;
+                max-width: 100% !important;
+                overflow-x: hidden !important;
+            }
+
+            .main .block-container,
+            [data-testid="stAppViewContainer"] .main .block-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 6px 8px 12px !important;
+                margin: 0 !important;
+            }
+
+            /* Override the portrait mobile stacking when the phone is
+               rotated sideways. */
+            .st-key-main_layout > div > [data-testid="stHorizontalBlock"] {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                align-items: stretch !important;
+                gap: 10px !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .st-key-main_layout > div > [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+                display: block !important;
+                min-width: 0 !important;
+                max-width: none !important;
+                width: auto !important;
+                flex: 1 1 0 !important;
+                margin: 0 !important;
+            }
+
+            /* Give Chat more room than My Cart. */
+            .st-key-main_layout > div > [data-testid="stHorizontalBlock"] > [data-testid="column"]:first-child {
+                flex: 1.55 1 0 !important;
+            }
+
+            .st-key-main_layout > div > [data-testid="stHorizontalBlock"] > [data-testid="column"]:last-child {
+                flex: 1 1 0 !important;
+            }
+
+            .st-key-chat_area,
+            .st-key-cart_area {
+                width: 100% !important;
+                min-width: 0 !important;
+                min-height: 0 !important;
+                height: calc(100vh - 92px) !important;
+                max-height: calc(100vh - 92px) !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+                padding: 9px !important;
+                border-radius: 14px !important;
+            }
+
+            .st-key-chat_area {
+                display: flex !important;
+                flex-direction: column !important;
+            }
+
+            .st-key-chat_messages,
+            .st-key-chat_messages > div {
+                min-height: 0 !important;
+            }
+
+            .st-key-cart_items_area {
+                max-height: calc(100vh - 220px) !important;
+                min-height: 0 !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+            }
+
+            .chatgpt-welcome {
+                min-height: 0 !important;
+                padding: 12px 8px 8px !important;
+            }
+
+            .welcome-row {
+                gap: 10px !important;
+            }
+
+            .chatbot-avatar-large {
+                width: 46px !important;
+                height: 46px !important;
+                min-width: 46px !important;
+                font-size: 21px !important;
+            }
+
+            .chatgpt-welcome-title {
+                font-size: 18px !important;
+                line-height: 1.15 !important;
+            }
+
+            .chatgpt-welcome-subtitle {
+                font-size: 11px !important;
+                line-height: 1.25 !important;
+            }
+
+            .language-note {
+                margin-left: 56px !important;
+                font-size: 9px !important;
+            }
+
+            .st-key-chat_input_bar {
+                position: sticky !important;
+                bottom: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .st-key-chat_input_bar input {
+                min-width: 0 !important;
+                font-size: 12px !important;
+            }
+
+            .st-key-chat_input_bar .stButton > button,
+            .st-key-chat_input_bar button {
+                min-height: 34px !important;
+                height: 34px !important;
+            }
+
+            .medicine-card {
+                padding: 7px !important;
+                gap: 7px !important;
+                margin: 6px 0 4px 0 !important;
+            }
+
+            .medicine-image {
+                width: 44px !important;
+                height: 44px !important;
+                min-width: 44px !important;
+                font-size: 22px !important;
+            }
+
+            .medicine-name {
+                font-size: 13px !important;
+            }
+
+            .medicine-category,
+            .medicine-price {
+                font-size: 10px !important;
+            }
+
+            .st-key-main_layout * {
+                max-width: 100% !important;
+                overflow-wrap: anywhere !important;
+                word-break: break-word !important;
+            }
+
+            /* Landscape receipt dialog */
+            div[data-testid="stDialog"] > div {
+                width: min(76vw, 520px) !important;
+                max-width: 520px !important;
+                max-height: 92vh !important;
+                overflow-y: auto !important;
+            }
+        }
+
+        @media only screen and (max-width: 480px) {
+            .main .block-container,
+            [data-testid="stAppViewContainer"] .main .block-container {
+                padding-left: 4px !important;
+                padding-right: 4px !important;
+            }
+
+            .st-key-chat_area {
+                height: 50vh !important;
+                max-height: 50vh !important;
+                min-height: 290px !important;
+            }
+
+            .chatgpt-welcome {
+                padding: 20px 6px 8px !important;
+                min-height: 185px !important;
+            }
+
+            .chatgpt-welcome-title {
+                font-size: 17px !important;
+            }
+
+            .chatgpt-welcome-subtitle {
+                font-size: 11px !important;
+            }
+
+            .language-note {
+                margin-left: 54px !important;
+                font-size: 10px !important;
+            }
+
+            .st-key-chat_input_bar > div:first-child {
+                padding-left: 8px !important;
+                padding-right: 5px !important;
+            }
+
+            .st-key-chat_input_bar .stButton > button,
+            .st-key-chat_input_bar button {
+                width: 40px !important;
+                min-width: 40px !important;
+                height: 40px !important;
+                min-height: 40px !important;
+            }
+        }
+
         </style>
         """,
         unsafe_allow_html=True
