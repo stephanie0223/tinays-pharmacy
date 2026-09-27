@@ -2955,7 +2955,7 @@ def reference_slip_popup():
         build_reference_slip_html(
             reference_slip_cart
         ),
-        height=720,
+        height=680,
         scrolling=True
     )
 
@@ -3876,25 +3876,222 @@ def load_css():
         div[role="dialog"] > div { border-radius:20px !important; background:#fff7fb !important; } 
         div[role="dialog"] [data-testid="stDialog"] { padding:10px 10px 16px !important; } 
 
-        @media screen and (max-width: 900px) { 
-            .main .block-container { padding-left: 7px !important; padding-right: 7px !important; } 
-            .st-key-chat_area { 
-                padding-left: 4px !important; 
-                padding-right: 4px !important; 
-                height: 560px !important; 
-                max-height: 560px !important; 
-            } 
-            .chatgpt-welcome { padding: 38px 10px 12px; min-height: 260px; } 
-            .welcome-row { gap: 13px; } 
-            .chatbot-avatar-large { width:54px; height:54px; min-width:54px; font-size:25px; } 
-            .chatgpt-welcome-title { font-size: 21px; } 
-            .chatgpt-welcome-subtitle { font-size: 13px; } 
-            .language-note { margin: 30px 0 0 67px; font-size: 13px; } 
-            .st-key-chat_input_bar { bottom: 5px !important; } 
-            .st-key-chat_input_bar input { font-size: 14px !important; } 
-            .st-key-chat_input_bar .stButton > button, 
-            .st-key-chat_input_bar button { min-height: 44px !important; width:44px !important; } 
-        } 
+        /* ==========================================================
+           RESPONSIVE LAYOUT
+           Desktop: chat + cart side-by-side.
+           Tablet/mobile: chat and cart stack vertically.
+           ========================================================== */
+
+        .st-key-main_layout {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        @media screen and (max-width: 900px) {
+            .main .block-container {
+                padding-left: 8px !important;
+                padding-right: 8px !important;
+                padding-top: 0.5rem !important;
+            }
+
+            /* Stack ONLY the two main panels.
+               Other column groups such as quantity/add buttons stay horizontal. */
+            .st-key-main_layout > div > div[data-testid="stHorizontalBlock"] {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 12px !important;
+            }
+
+            .st-key-main_layout > div > div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+                width: 100% !important;
+                min-width: 100% !important;
+                flex: 1 1 100% !important;
+            }
+
+            .st-key-chat_area {
+                padding-left: 4px !important;
+                padding-right: 4px !important;
+                height: min(560px, 58vh) !important;
+                max-height: min(560px, 58vh) !important;
+                min-height: 390px !important;
+            }
+
+            .st-key-cart_area {
+                min-height: auto !important;
+                padding: 12px !important;
+                margin-top: 0 !important;
+            }
+
+            .st-key-cart_items_area {
+                max-height: 330px !important;
+            }
+
+            .chatgpt-welcome {
+                padding: 34px 10px 12px;
+                min-height: 235px;
+            }
+
+            .welcome-row {
+                gap: 12px;
+                width: 100%;
+            }
+
+            .chatbot-avatar-large {
+                width: 54px;
+                height: 54px;
+                min-width: 54px;
+                font-size: 25px;
+            }
+
+            .chatgpt-welcome-title {
+                font-size: 21px;
+                line-height: 1.25;
+            }
+
+            .chatgpt-welcome-subtitle {
+                font-size: 13px;
+                line-height: 1.45;
+            }
+
+            .language-note {
+                margin: 26px 0 0 66px;
+                font-size: 12px;
+            }
+
+            div[data-testid="stChatMessage"] {
+                padding-left: 8px !important;
+                padding-right: 8px !important;
+            }
+
+            .medicine-card {
+                width: 100%;
+                max-width: 100%;
+                padding: 10px;
+                gap: 9px;
+            }
+
+            .medicine-image {
+                width: 56px;
+                height: 56px;
+                min-width: 56px;
+                font-size: 27px;
+            }
+
+            .medicine-name {
+                font-size: 15px;
+            }
+
+            .st-key-chat_input_bar {
+                bottom: 5px !important;
+                max-width: 100% !important;
+                margin-top: 8px !important;
+            }
+
+            .st-key-chat_input_bar > div:first-child {
+                padding: 5px 6px 5px 12px !important;
+            }
+
+            .st-key-chat_input_bar input {
+                font-size: 14px !important;
+                min-width: 0 !important;
+            }
+
+            .st-key-chat_input_bar .stButton > button,
+            .st-key-chat_input_bar button {
+                min-height: 44px !important;
+                width: 44px !important;
+            }
+
+            /* Reference-slip dialog */
+            div[data-testid="stDialog"] > div {
+                width: calc(100vw - 20px) !important;
+                max-width: calc(100vw - 20px) !important;
+                max-height: 92vh !important;
+                padding: 0 8px 12px !important;
+                border-radius: 12px !important;
+            }
+
+            div[data-testid="stDialog"] [data-testid="stCustomComponentV1"] {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+        }
+
+        @media screen and (max-width: 520px) {
+            .main .block-container {
+                padding-left: 5px !important;
+                padding-right: 5px !important;
+            }
+
+            .st-key-chat_area {
+                height: 52vh !important;
+                max-height: 52vh !important;
+                min-height: 330px !important;
+                border-radius: 0 0 14px 14px !important;
+            }
+
+            .chatgpt-welcome {
+                padding: 25px 7px 10px;
+                min-height: 205px;
+            }
+
+            .welcome-row {
+                align-items: flex-start;
+            }
+
+            .chatbot-avatar-large {
+                width: 46px;
+                height: 46px;
+                min-width: 46px;
+                font-size: 21px;
+            }
+
+            .chatgpt-welcome-title {
+                font-size: 18px;
+            }
+
+            .chatgpt-welcome-subtitle {
+                font-size: 12px;
+            }
+
+            .language-note {
+                margin: 20px 0 0 57px;
+                font-size: 11px;
+                line-height: 1.4;
+            }
+
+            .st-key-cart_area {
+                border-radius: 14px !important;
+                padding: 10px !important;
+            }
+
+            .cart-title {
+                font-size: 17px;
+            }
+
+            .st-key-cart_items_area {
+                max-height: 280px !important;
+            }
+
+            .medicine-card {
+                align-items: flex-start;
+            }
+
+            .stock-badge {
+                margin-left: 3px;
+            }
+
+            .st-key-chat_input_bar input {
+                font-size: 13px !important;
+            }
+
+            div[data-testid="stDialog"] > div {
+                width: calc(100vw - 10px) !important;
+                max-width: calc(100vw - 10px) !important;
+                padding-left: 4px !important;
+                padding-right: 4px !important;
+            }
+        }
         </style> 
         """, 
         unsafe_allow_html=True 
@@ -4920,120 +5117,121 @@ def render(user):
     # LAYOUT 
     # ====================================================== 
 
-    left_column, right_column = st.columns( 
-        [1.55, 1.0], 
-        gap="small" 
-    ) 
+    with st.container(key="main_layout"):
+        left_column, right_column = st.columns( 
+            [1.55, 1.0], 
+            gap="small" 
+        ) 
 
-    # ====================================================== 
-    # LEFT COLUMN 
-    # ====================================================== 
+        # ====================================================== 
+        # LEFT COLUMN 
+        # ====================================================== 
 
-    with left_column: 
+        with left_column: 
 
-        # Fixed-height message area: new messages are added inside this 
-        # scrollable region instead of pushing the whole page downward. 
-        with st.container( 
-            key="chat_area", 
-            height=650, 
-            border=False 
-        ): 
-
-            # -------------------------------------------------- 
-            # WELCOME 
-            # -------------------------------------------------- 
-
-            if not st.session_state.messages: 
-                render_markdown( 
-                    """ 
-                    <div class="chatgpt-welcome"> 
-                        <div class="welcome-row"> 
-                            <div class="chatbot-avatar-large">🤖</div> 
-
-                            <div class="welcome-copy"> 
-                                <div class="chatgpt-welcome-title"> 
-                                    Hello! 👋 I am your Gemini Pharmacy Chatbot. 
-                                </div> 
-
-                                <div class="chatgpt-welcome-subtitle"> 
-                                    Ask me about medicine names, prices, categories, availability, or create an order request. 
-                                </div> 
-                            </div> 
-                        </div> 
-
-                        <div class="language-note"> 
-                            <b>Languages:</b> English • Tagalog • Hiligaynon/Ilonggo 
-                        </div> 
-                    </div> 
-                    """, 
-                    unsafe_allow_html=True 
-                ) 
-
-            # -------------------------------------------------- 
-            # CHAT HISTORY 
-            # -------------------------------------------------- 
-
-            for message in ( 
-                st.session_state.messages 
+            # Fixed-height message area: new messages are added inside this 
+            # scrollable region instead of pushing the whole page downward. 
+            with st.container( 
+                key="chat_area", 
+                height=650, 
+                border=False 
             ): 
 
-                msg_role = message.get( 
-                    "role", 
-                    "assistant" 
-                ) 
+                # -------------------------------------------------- 
+                # WELCOME 
+                # -------------------------------------------------- 
 
-                content = message.get( 
-                    "content", 
-                    "" 
-                ) 
+                if not st.session_state.messages: 
+                    render_markdown( 
+                        """ 
+                        <div class="chatgpt-welcome"> 
+                            <div class="welcome-row"> 
+                                <div class="chatbot-avatar-large">🤖</div> 
 
-                if msg_role == "user": 
+                                <div class="welcome-copy"> 
+                                    <div class="chatgpt-welcome-title"> 
+                                        Hello! 👋 I am your Gemini Pharmacy Chatbot. 
+                                    </div> 
 
-                    with st.chat_message( 
-                        "user" 
-                    ): 
+                                    <div class="chatgpt-welcome-subtitle"> 
+                                        Ask me about medicine names, prices, categories, availability, or create an order request. 
+                                    </div> 
+                                </div> 
+                            </div> 
 
-                        render_markdown( 
-                            content 
-                        ) 
+                            <div class="language-note"> 
+                                <b>Languages:</b> English • Tagalog • Hiligaynon/Ilonggo 
+                            </div> 
+                        </div> 
+                        """, 
+                        unsafe_allow_html=True 
+                    ) 
 
-                else: 
+                # -------------------------------------------------- 
+                # CHAT HISTORY 
+                # -------------------------------------------------- 
 
-                    with st.chat_message( 
-                        "Chatbot", 
-                        avatar="🤖" 
-                    ): 
+                for message in ( 
+                    st.session_state.messages 
+                ): 
 
-                        render_markdown( 
-                            content 
-                        ) 
+                    msg_role = message.get( 
+                        "role", 
+                        "assistant" 
+                    ) 
+
+                    content = message.get( 
+                        "content", 
+                        "" 
+                    ) 
+
+                    if msg_role == "user": 
+
+                        with st.chat_message( 
+                            "user" 
+                        ): 
+
+                            render_markdown( 
+                                content 
+                            ) 
+
+                    else: 
+
+                        with st.chat_message( 
+                            "Chatbot", 
+                            avatar="🤖" 
+                        ): 
+
+                            render_markdown( 
+                                content 
+                            ) 
+
+                # -------------------------------------------------- 
+                # QUICK ORDER 
+                # -------------------------------------------------- 
+
+                render_quick_order() 
 
             # -------------------------------------------------- 
-            # QUICK ORDER 
+            # FIXED INPUT BAR 
             # -------------------------------------------------- 
+            # Kept OUTSIDE the scrolling message container so it stays 
+            # in place while previous messages move upward. 
+            render_chat_input() 
 
-            render_quick_order() 
+        # ====================================================== 
+        # RIGHT COLUMN 
+        # ====================================================== 
 
-        # -------------------------------------------------- 
-        # FIXED INPUT BAR 
-        # -------------------------------------------------- 
-        # Kept OUTSIDE the scrolling message container so it stays 
-        # in place while previous messages move upward. 
-        render_chat_input() 
+        with right_column: 
 
-    # ====================================================== 
-    # RIGHT COLUMN 
-    # ====================================================== 
+            with st.container( 
+                key="cart_area" 
+            ): 
 
-    with right_column: 
+                render_order_panel() 
 
-        with st.container( 
-            key="cart_area" 
-        ): 
-
-            render_order_panel() 
-
-    # ====================================================== 
+        # ====================================================== 
     # REFERENCE SLIP POPUP 
     # ====================================================== 
 
