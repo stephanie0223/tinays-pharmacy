@@ -4019,24 +4019,132 @@ def load_css():
         div[role="dialog"] > div { border-radius:20px !important; background:#fff7fb !important; } 
         div[role="dialog"] [data-testid="stDialog"] { padding:10px 10px 16px !important; } 
 
-        @media screen and (max-width: 900px) { 
-            .main .block-container { padding-left: 7px !important; padding-right: 7px !important; } 
-            .st-key-chat_area { 
-                padding-left: 4px !important; 
-                padding-right: 4px !important; 
-                height: 560px !important; 
-                max-height: 560px !important; 
-            } 
-            .chatgpt-welcome { padding: 38px 10px 12px; min-height: 260px; } 
-            .welcome-row { gap: 13px; } 
-            .chatbot-avatar-large { width:54px; height:54px; min-width:54px; font-size:25px; } 
-            .chatgpt-welcome-title { font-size: 21px; } 
-            .chatgpt-welcome-subtitle { font-size: 13px; } 
-            .language-note { margin: 30px 0 0 67px; font-size: 13px; } 
-            .st-key-chat_input_bar { bottom: 5px !important; } 
-            .st-key-chat_input_bar input { font-size: 14px !important; } 
-            .st-key-chat_input_bar .stButton > button, 
-            .st-key-chat_input_bar button { min-height: 44px !important; width:44px !important; } 
+        /* ==========================================================
+           TABLET / MOBILE
+           Compact styling is used only for portrait/narrow screens.
+           Landscape tablets keep the desktop/reference proportions.
+           ========================================================== */
+
+        @media screen and (max-width: 900px) and (orientation: portrait) {
+            .main .block-container {
+                padding-left: 7px !important;
+                padding-right: 7px !important;
+            }
+
+            .st-key-chat_area {
+                padding-left: 4px !important;
+                padding-right: 4px !important;
+                height: 560px !important;
+                max-height: 560px !important;
+            }
+
+            .chatgpt-welcome {
+                padding: 38px 10px 12px !important;
+                min-height: 260px !important;
+            }
+
+            .welcome-row {
+                gap: 13px !important;
+            }
+
+            .chatbot-avatar-large {
+                width: 54px !important;
+                height: 54px !important;
+                min-width: 54px !important;
+                font-size: 25px !important;
+            }
+
+            .chatgpt-welcome-title {
+                font-size: 21px !important;
+            }
+
+            .chatgpt-welcome-subtitle {
+                font-size: 13px !important;
+            }
+
+            .language-note {
+                margin: 30px 0 0 67px !important;
+                font-size: 13px !important;
+            }
+
+            .st-key-chat_input_bar {
+                bottom: 5px !important;
+            }
+
+            .st-key-chat_input_bar input {
+                font-size: 14px !important;
+            }
+
+            .st-key-chat_input_bar .stButton > button,
+            .st-key-chat_input_bar button {
+                min-height: 44px !important;
+                width: 44px !important;
+            }
+        }
+
+        /* ==========================================================
+           LANDSCAPE TABLET
+           Same sizing/proportions as the desktop reference image.
+           ========================================================== */
+
+        @media screen and (orientation: landscape) and (min-width: 700px) {
+            .main .block-container {
+                max-width: 1250px !important;
+                padding: 0.8rem 1.2rem 2rem !important;
+            }
+
+            .st-key-chat_area {
+                height: 650px !important;
+                max-height: 650px !important;
+                padding: 0 1.1rem 1.2rem !important;
+            }
+
+            .chatgpt-welcome {
+                min-height: 285px !important;
+                padding: 58px 22px 18px !important;
+            }
+
+            .welcome-row {
+                gap: 20px !important;
+            }
+
+            .chatbot-avatar-large {
+                width: 66px !important;
+                height: 66px !important;
+                min-width: 66px !important;
+                font-size: 30px !important;
+            }
+
+            .chatgpt-welcome-title {
+                font-size: 29px !important;
+                line-height: 1.2 !important;
+            }
+
+            .chatgpt-welcome-subtitle {
+                font-size: 16px !important;
+                line-height: 1.5 !important;
+            }
+
+            .language-note {
+                margin: 44px 0 0 86px !important;
+                font-size: 16px !important;
+            }
+
+            .st-key-chat_input_bar {
+                bottom: 10px !important;
+                max-width: 1040px !important;
+                margin: 12px auto 0 !important;
+            }
+
+            .st-key-chat_input_bar input {
+                font-size: 18px !important;
+            }
+
+            .st-key-chat_input_bar .stButton > button,
+            .st-key-chat_input_bar button {
+                min-height: 52px !important;
+                width: 52px !important;
+            }
         } 
         </style> 
         """, 
