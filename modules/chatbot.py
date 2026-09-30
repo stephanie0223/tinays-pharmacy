@@ -4549,7 +4549,96 @@ def load_css():
             }
         }
 
-        </style> 
+        
+/* ==========================================================
+   FULL-SCREEN LANDSCAPE PHONE FIX
+   Remove Streamlit's top toolbar/header space so the actual
+   pharmacy workspace can occupy the full browser viewport.
+   ========================================================== */
+@media screen and (orientation: landscape) and (max-width: 699px) {
+
+    header[data-testid="stHeader"],
+    [data-testid="stHeader"],
+    [data-testid="stToolbar"],
+    [data-testid="stDecoration"] {
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+    }
+
+    .stAppViewContainer,
+    .stAppViewContainer > .main,
+    section.main,
+    .main {
+        height: 100dvh !important;
+        min-height: 0 !important;
+        max-height: 100dvh !important;
+        overflow: hidden !important;
+    }
+
+    .main .block-container {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100dvh !important;
+        min-height: 0 !important;
+        max-height: 100dvh !important;
+        padding: 2px 5px 2px !important;
+        margin: 0 !important;
+        overflow: hidden !important;
+    }
+
+    [data-testid="stVerticalBlock"] {
+        min-height: 0 !important;
+    }
+
+    [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) {
+        height: calc(100dvh - 4px) !important;
+        min-height: 0 !important;
+        max-height: calc(100dvh - 4px) !important;
+        overflow: hidden !important;
+        align-items: stretch !important;
+    }
+
+    [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) > [data-testid="stColumn"] {
+        height: 100% !important;
+        min-height: 0 !important;
+        max-height: 100% !important;
+        overflow: hidden !important;
+    }
+
+    .st-key-chat_area {
+        height: calc(100dvh - 58px) !important;
+        min-height: 0 !important;
+        max-height: calc(100dvh - 58px) !important;
+        overflow-y: auto !important;
+    }
+
+    .st-key-cart_area {
+        height: calc(100dvh - 8px) !important;
+        min-height: 0 !important;
+        max-height: calc(100dvh - 8px) !important;
+        overflow-y: auto !important;
+    }
+
+    /* Prevent the page itself from becoming taller than the screen. */
+    .stApp,
+    .stAppViewContainer,
+    [data-testid="stAppViewContainer"],
+    [data-testid="stMain"],
+    [data-testid="stMainBlockContainer"] {
+        overflow: hidden !important;
+    }
+
+    /* Keep the chatbot input inside the visible chat area. */
+    .st-key-chat_input_bar {
+        position: relative !important;
+        bottom: auto !important;
+        margin-top: 2px !important;
+    }
+}
+
+</style> 
         """, 
         unsafe_allow_html=True 
     ) 
