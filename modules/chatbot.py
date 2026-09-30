@@ -4333,6 +4333,222 @@ def load_css():
                 width: 52px !important;
             }
         } 
+
+        /* ==========================================================
+           LANDSCAPE PHONE / SMALL TABLET
+           When the phone is rotated sideways, keep Chat + My Cart
+           side-by-side and fit the complete workspace into the
+           available viewport so the page itself does not need
+           vertical scrolling.
+           ========================================================== */
+        @media screen and (orientation: landscape) and (max-width: 699px) {
+
+            html, body, .stApp {
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 100% !important;
+                min-height: 100% !important;
+                overflow-x: hidden !important;
+            }
+
+            .main .block-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                height: calc(100svh - 4px) !important;
+                min-height: 0 !important;
+                padding: 4px 6px 4px !important;
+                margin: 0 !important;
+                overflow: hidden !important;
+            }
+
+            /* Keep the main Chat + Cart columns horizontal. */
+            [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                align-items: stretch !important;
+                gap: 7px !important;
+                width: 100% !important;
+                height: calc(100svh - 12px) !important;
+                min-height: 0 !important;
+                overflow: hidden !important;
+            }
+
+            [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) > [data-testid="stColumn"] {
+                min-width: 0 !important;
+                min-height: 0 !important;
+                height: 100% !important;
+                overflow: hidden !important;
+            }
+
+            [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) > [data-testid="stColumn"]:first-child {
+                flex: 1.55 1 0 !important;
+                width: auto !important;
+                max-width: none !important;
+            }
+
+            [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) > [data-testid="stColumn"]:last-child {
+                flex: 1 1 0 !important;
+                width: auto !important;
+                max-width: none !important;
+            }
+
+            .st-key-chat_area {
+                width: 100% !important;
+                height: calc(100svh - 62px) !important;
+                max-height: calc(100svh - 62px) !important;
+                min-height: 0 !important;
+                padding: 0 5px 5px !important;
+                margin: 0 !important;
+                border-radius: 12px !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+            }
+
+            .st-key-cart_area {
+                width: 100% !important;
+                height: calc(100svh - 12px) !important;
+                max-height: calc(100svh - 12px) !important;
+                min-height: 0 !important;
+                padding: 7px !important;
+                margin: 0 !important;
+                border-radius: 12px !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+            }
+
+            /* Compact welcome section so the chat can use the full
+               landscape phone height. */
+            .chatgpt-welcome {
+                min-height: 0 !important;
+                padding: 12px 8px 8px !important;
+            }
+
+            .welcome-row {
+                gap: 9px !important;
+                align-items: center !important;
+            }
+
+            .chatbot-avatar-large {
+                width: 42px !important;
+                height: 42px !important;
+                min-width: 42px !important;
+                font-size: 20px !important;
+            }
+
+            .chatgpt-welcome-title {
+                font-size: 17px !important;
+                line-height: 1.15 !important;
+            }
+
+            .chatgpt-welcome-subtitle {
+                font-size: 11px !important;
+                line-height: 1.3 !important;
+            }
+
+            .language-note {
+                margin: 8px 0 0 51px !important;
+                font-size: 10px !important;
+            }
+
+            /* Compact chat messages. */
+            div[data-testid="stChatMessage"] {
+                padding: 4px 5px !important;
+                margin-bottom: 2px !important;
+            }
+
+            div[data-testid="stChatMessage"] p {
+                font-size: 12px !important;
+                line-height: 1.3 !important;
+                margin-bottom: 2px !important;
+            }
+
+            /* Keep the input bar compact and visible at the bottom. */
+            .st-key-chat_input_bar {
+                position: relative !important;
+                bottom: auto !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 3px 0 0 !important;
+                padding: 0 !important;
+            }
+
+            .st-key-chat_input_bar input {
+                font-size: 12px !important;
+                min-height: 36px !important;
+            }
+
+            .st-key-chat_input_bar .stButton > button,
+            .st-key-chat_input_bar button {
+                width: 36px !important;
+                min-width: 36px !important;
+                height: 36px !important;
+                min-height: 36px !important;
+                padding: 0 !important;
+            }
+
+            /* Make the cart dense enough to remain visible without
+               forcing the entire page to scroll. */
+            .st-key-cart_area .cart-item {
+                padding: 6px !important;
+                margin: 5px 2px !important;
+            }
+
+            .st-key-cart_area .cart-item-name {
+                font-size: 11px !important;
+            }
+
+            .st-key-cart_area .cart-item-generic,
+            .st-key-cart_area .cart-item-details {
+                font-size: 9px !important;
+            }
+
+            .st-key-cart_area .stButton > button,
+            .st-key-cart_area input,
+            .st-key-cart_area [data-baseweb="select"] {
+                min-height: 34px !important;
+            }
+
+            .st-key-cart_items_area {
+                max-height: none !important;
+                height: auto !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+            }
+
+            .medicine-card {
+                padding: 6px !important;
+                gap: 6px !important;
+            }
+
+            .medicine-image {
+                width: 40px !important;
+                height: 40px !important;
+                min-width: 40px !important;
+                font-size: 19px !important;
+            }
+
+            .medicine-name {
+                font-size: 12px !important;
+            }
+
+            .medicine-category {
+                font-size: 9px !important;
+            }
+
+            .medicine-price {
+                font-size: 11px !important;
+            }
+
+            /* Prevent long text from creating horizontal overflow. */
+            .st-key-cart_area *,
+            .st-key-chat_area * {
+                max-width: 100%;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+        }
+
         </style> 
         """, 
         unsafe_allow_html=True 
