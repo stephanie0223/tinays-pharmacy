@@ -364,6 +364,281 @@ hr {
     background: #E91E63;
 }
 
+
+/* ==========================================================
+   FULL-SCREEN PHONE/TABLET LANDSCAPE
+   Applies to the AI Chatbot page when the device is rotated.
+   The browser/Streamlit page itself stays fixed; only the
+   Chat and My Cart panels may scroll internally if needed.
+   ========================================================== */
+@media screen and (orientation: landscape) and (max-width: 900px) {
+
+    html,
+    body,
+    .stApp,
+    [data-testid="stAppViewContainer"],
+    [data-testid="stAppViewContainer"] > .main {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+        overflow: hidden !important;
+    }
+
+    /* Remove the Streamlit top bar/extra vertical space */
+    header[data-testid="stHeader"] {
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+    }
+
+    div[data-testid="stToolbar"] {
+        display: none !important;
+    }
+
+    div[data-testid="stDecoration"] {
+        display: none !important;
+    }
+
+    /* Only lock the page when the chatbot workspace exists */
+    [data-testid="stAppViewContainer"]:has(.st-key-chat_area) .main {
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+        overflow: hidden !important;
+    }
+
+    [data-testid="stAppViewContainer"]:has(.st-key-chat_area)
+    .main .block-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+        padding: 4px 6px 4px !important;
+        margin: 0 !important;
+        overflow: hidden !important;
+    }
+
+    /* Chat + My Cart columns */
+    [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: stretch !important;
+        width: 100% !important;
+        height: calc(100dvh - 8px) !important;
+        min-height: 0 !important;
+        max-height: calc(100dvh - 8px) !important;
+        gap: 7px !important;
+        overflow: hidden !important;
+    }
+
+    [data-testid="stHorizontalBlock"]:has(.st-key-chat_area)
+    > [data-testid="stColumn"] {
+        min-width: 0 !important;
+        min-height: 0 !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        overflow: hidden !important;
+    }
+
+    [data-testid="stHorizontalBlock"]:has(.st-key-chat_area)
+    > [data-testid="stColumn"]:first-child {
+        flex: 1.55 1 0 !important;
+        width: auto !important;
+        max-width: none !important;
+    }
+
+    [data-testid="stHorizontalBlock"]:has(.st-key-chat_area)
+    > [data-testid="stColumn"]:last-child {
+        flex: 1 1 0 !important;
+        width: auto !important;
+        max-width: none !important;
+    }
+
+    /* Remove Streamlit vertical gaps around the two panels */
+    [data-testid="stHorizontalBlock"]:has(.st-key-chat_area)
+    > [data-testid="stColumn"] > div {
+        height: 100% !important;
+        min-height: 0 !important;
+    }
+
+    /* Chat panel */
+    .st-key-chat_area {
+        width: 100% !important;
+        height: calc(100dvh - 16px) !important;
+        max-height: calc(100dvh - 16px) !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 4px 5px 5px !important;
+        border-radius: 12px !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Cart panel */
+    .st-key-cart_area {
+        width: 100% !important;
+        height: calc(100dvh - 16px) !important;
+        max-height: calc(100dvh - 16px) !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 6px !important;
+        border-radius: 12px !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Keep chat input compact */
+    .st-key-chat_input_bar {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 2px 0 0 !important;
+        padding: 0 !important;
+    }
+
+    .st-key-chat_input_bar input {
+        min-height: 34px !important;
+        height: 34px !important;
+        font-size: 12px !important;
+    }
+
+    .st-key-chat_input_bar button,
+    .st-key-chat_input_bar .stButton > button {
+        min-width: 34px !important;
+        width: 34px !important;
+        min-height: 34px !important;
+        height: 34px !important;
+        padding: 0 !important;
+    }
+
+    /* Compact chatbot content */
+    .chatgpt-welcome {
+        min-height: 0 !important;
+        padding: 8px 7px 6px !important;
+    }
+
+    .welcome-row {
+        gap: 7px !important;
+    }
+
+    .chatbot-avatar-large {
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        font-size: 18px !important;
+    }
+
+    .chatgpt-welcome-title {
+        font-size: 16px !important;
+        line-height: 1.1 !important;
+    }
+
+    .chatgpt-welcome-subtitle {
+        font-size: 10px !important;
+        line-height: 1.2 !important;
+    }
+
+    .language-note {
+        margin-top: 5px !important;
+        font-size: 9px !important;
+    }
+
+    div[data-testid="stChatMessage"] {
+        padding: 3px 4px !important;
+        margin-bottom: 1px !important;
+    }
+
+    div[data-testid="stChatMessage"] p {
+        font-size: 11px !important;
+        line-height: 1.25 !important;
+        margin-bottom: 1px !important;
+    }
+
+    /* Compact cart */
+    .st-key-cart_area .cart-item {
+        padding: 5px !important;
+        margin: 4px 1px !important;
+    }
+
+    .st-key-cart_area .cart-item-name {
+        font-size: 11px !important;
+    }
+
+    .st-key-cart_area .cart-item-generic,
+    .st-key-cart_area .cart-item-details {
+        font-size: 9px !important;
+    }
+
+    .st-key-cart_area .stButton > button,
+    .st-key-cart_area input,
+    .st-key-cart_area [data-baseweb="select"] {
+        min-height: 32px !important;
+    }
+
+    .st-key-cart_items_area {
+        max-height: none !important;
+        height: auto !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+    }
+
+    /* Prevent wide cards/text from creating horizontal page scrolling */
+    .st-key-chat_area *,
+    .st-key-cart_area * {
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+}
+
+/* Very short landscape phones */
+@media screen and (orientation: landscape) and (max-height: 430px) and (max-width: 900px) {
+
+    [data-testid="stAppViewContainer"]:has(.st-key-chat_area)
+    .main .block-container {
+        padding: 2px 4px 2px !important;
+    }
+
+    [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) {
+        height: calc(100dvh - 4px) !important;
+        max-height: calc(100dvh - 4px) !important;
+        gap: 5px !important;
+    }
+
+    .st-key-chat_area,
+    .st-key-cart_area {
+        height: calc(100dvh - 8px) !important;
+        max-height: calc(100dvh - 8px) !important;
+        padding: 3px 4px !important;
+    }
+
+    .chatgpt-welcome {
+        padding: 5px !important;
+    }
+
+    .chatbot-avatar-large {
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        font-size: 15px !important;
+    }
+
+    .chatgpt-welcome-title {
+        font-size: 14px !important;
+    }
+
+    .chatgpt-welcome-subtitle {
+        font-size: 9px !important;
+    }
+
+    div[data-testid="stChatMessage"] p {
+        font-size: 10px !important;
+    }
+}
+
 </style>
 """, unsafe_allow_html=True)
 
