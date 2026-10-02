@@ -770,355 +770,138 @@ def login_page():
            TABLET
            ================================================= */
 
-        @media (max-width: 1100px) {{
 
+        /* =================================================
+           CLEAN LOGIN RESPONSIVE LAYOUT
+           ================================================= */
+
+        /* Tablets and smaller laptops */
+        @media screen and (max-width: 1100px) {{
             .block-container {{
-
-                max-width:
-                    680px !important;
-
-                padding-left:
-                    25px !important;
-
-                padding-right:
-                    25px !important;
+                width: 100% !important;
+                max-width: 680px !important;
+                margin: 0 auto !important;
+                padding: 24px 22px !important;
             }}
 
             .st-key-login_container {{
+                width: 100% !important;
+                max-width: 600px !important;
+                margin: 0 auto !important;
+                padding: 32px !important;
+            }}
 
-                max-width:
-                    600px !important;
-
-                padding:
-                    35px !important;
+            .login-logo img,
+            .login-logo {{
+                max-width: 100% !important;
             }}
         }}
 
-
-        /* =================================================
-           SMALL TABLET
-           ================================================= */
-
-        @media (max-width: 768px) {{
+        /* Tablet portrait / landscape */
+        @media screen and (max-width: 900px) {{
+            html,
+            body,
+            .stApp {{
+                width: 100% !important;
+                max-width: 100% !important;
+                min-height: 100% !important;
+                overflow-x: hidden !important;
+            }}
 
             .block-container {{
-
-                max-width:
-                    100% !important;
-
-                padding-top:
-                    25px !important;
-
-                padding-bottom:
-                    25px !important;
-
-                padding-left:
-                    18px !important;
-
-                padding-right:
-                    18px !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 auto !important;
+                padding: 20px 16px !important;
             }}
 
             .st-key-login_container {{
-
-                width:
-                    100% !important;
-
-                max-width:
-                    600px !important;
-
-                padding:
-                    30px !important;
-
-                border-radius:
-                    24px !important;
+                width: 100% !important;
+                max-width: 620px !important;
+                margin: 0 auto !important;
+                padding: 28px !important;
+                border-radius: 24px !important;
             }}
 
-            .login-logo {{
-
-                width:
-                    120px;
-
-                height:
-                    120px;
+            .st-key-login_container div[data-testid="stTextInput"] input {{
+                width: 100% !important;
+                min-width: 0 !important;
+                height: 48px !important;
+                min-height: 48px !important;
+                font-size: 16px !important;
             }}
 
-            .login-logo img {{
-
-                width:
-                    110px;
-
-                height:
-                    110px;
-            }}
-
-            .welcome-title {{
-
-                font-size:
-                    29px;
-            }}
-
-            .welcome-subtitle {{
-
-                font-size:
-                    14px;
+            .st-key-login_container div.stButton > button {{
+                width: 100% !important;
+                min-height: 48px !important;
+                font-size: 15px !important;
             }}
         }}
 
-
-        /* =================================================
-           MOBILE
-           ================================================= */
-
-        @media (max-width: 480px) {{
-
+        /* Phones / narrow tablets */
+        @media screen and (max-width: 600px) {{
             .block-container {{
-
-                width:
-                    100% !important;
-
-                max-width:
-                    100% !important;
-
-                padding-top:
-                    15px !important;
-
-                padding-bottom:
-                    15px !important;
-
-                padding-left:
-                    10px !important;
-
-                padding-right:
-                    10px !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 14px 10px !important;
             }}
-
 
             .st-key-login_container {{
-
-                width:
-                    100% !important;
-
-                max-width:
-                    100% !important;
-
-                padding:
-                    22px !important;
-
-                border-radius:
-                    20px !important;
-
-                border-width:
-                    1.5px !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 auto !important;
+                padding: 22px 18px !important;
+                border-radius: 20px !important;
             }}
-
-
-            .login-logo {{
-
-                width:
-                    95px;
-
-                height:
-                    95px;
-
-                margin-bottom:
-                    15px;
-
-                border-width:
-                    3px;
-            }}
-
-
-            .login-logo img {{
-
-                width:
-                    87px;
-
-                height:
-                    87px;
-            }}
-
 
             .welcome-title {{
-
-                font-size:
-                    24px;
-
-                line-height:
-                    1.2;
+                font-size: 26px !important;
+                line-height: 1.2 !important;
             }}
-
 
             .welcome-subtitle {{
-
-                font-size:
-                    12px;
-
-                margin-bottom:
-                    22px;
+                font-size: 13px !important;
+                line-height: 1.4 !important;
             }}
 
-
-            .st-key-login_container
-            div[data-testid="stTextInput"] label {{
-
-                font-size:
-                    12px !important;
+            .st-key-login_container div[data-testid="stTextInput"] {{
+                width: 100% !important;
+                margin: 0 !important;
+                padding-bottom: 12px !important;
             }}
 
-
-            .st-key-login_container
-            div[data-testid="stTextInput"] input {{
-
-                height:
-                    45px !important;
-
-                min-height:
-                    45px !important;
-
-                font-size:
-                    13px !important;
-
-                border-radius:
-                    11px !important;
+            .st-key-login_container div[data-testid="stTextInput"] input {{
+                height: 46px !important;
+                min-height: 46px !important;
+                font-size: 16px !important;
             }}
 
-
-            .st-key-login_container
-            div.stButton > button {{
-
-                min-height:
-                    46px !important;
-
-                font-size:
-                    14px !important;
-
-                border-radius:
-                    12px !important;
+            .st-key-login_container div.stButton > button {{
+                min-height: 46px !important;
+                font-size: 14px !important;
             }}
 
-
-            .public-mode {{
-
-                margin-top:
-                    20px;
-
-                padding:
-                    15px;
-
-                border-radius:
-                    14px;
-            }}
-
-
+            .public-mode,
+            .public-text,
             .public-title {{
-
-                font-size:
-                    14px;
-            }}
-
-
-            .public-text {{
-
-                font-size:
-                    11px;
-            }}
-
-
-            .st-key-login_container
-            div.stButton:last-child > button {{
-
-                min-height:
-                    40px !important;
-
-                font-size:
-                    11px !important;
+                max-width: 100% !important;
+                overflow-wrap: anywhere !important;
             }}
         }}
 
-
-        /* =================================================
-           VERY SMALL PHONES
-           ================================================= */
-
-        @media (max-width: 360px) {{
-
+        /* Very narrow phones */
+        @media screen and (max-width: 360px) {{
             .block-container {{
-
-                padding-left:
-                    7px !important;
-
-                padding-right:
-                    7px !important;
+                padding: 10px 7px !important;
             }}
-
 
             .st-key-login_container {{
-
-                padding:
-                    17px !important;
-
-                border-radius:
-                    17px !important;
+                padding: 17px !important;
+                border-radius: 17px !important;
             }}
-
-
-            .login-logo {{
-
-                width:
-                    80px;
-
-                height:
-                    80px;
-            }}
-
-
-            .login-logo img {{
-
-                width:
-                    74px;
-
-                height:
-                    74px;
-            }}
-
 
             .welcome-title {{
-
-                font-size:
-                    21px;
-            }}
-
-
-            .welcome-subtitle {{
-
-                font-size:
-                    11px;
-            }}
-
-
-            .st-key-login_container
-            div[data-testid="stTextInput"] input {{
-
-                height:
-                    42px !important;
-
-                min-height:
-                    42px !important;
-
-                font-size:
-                    12px !important;
-            }}
-
-
-            .st-key-login_container
-            div.stButton > button {{
-
-                min-height:
-                    43px !important;
-
-                font-size:
-                    13px !important;
+                font-size: 23px !important;
             }}
         }}
 
