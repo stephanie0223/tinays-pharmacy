@@ -4063,11 +4063,13 @@ def load_css():
 
             .st-key-chat_area {
                 width: 100% !important;
-                height: min(56svh, 560px) !important;
-                max-height: min(56svh, 560px) !important;
-                min-height: 380px !important;
-                padding: 0 5px 10px !important;
+                height: 390px !important;
+                max-height: 390px !important;
+                min-height: 390px !important;
+                padding: 0 5px 8px !important;
                 border-radius: 14px !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
             }
 
             .st-key-cart_area {
@@ -4161,8 +4163,8 @@ def load_css():
             }
 
             .chatgpt-welcome {
-                padding: 38px 10px 12px !important;
-                min-height: 260px !important;
+                padding: 25px 10px 10px !important;
+                min-height: 190px !important;
             }
 
             .welcome-row {
