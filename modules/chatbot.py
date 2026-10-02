@@ -4551,90 +4551,92 @@ def load_css():
 
         
 /* ==========================================================
-   FULL-SCREEN LANDSCAPE PHONE FIX
-   Remove Streamlit's top toolbar/header space so the actual
-   pharmacy workspace can occupy the full browser viewport.
+   FINAL RESPONSIVE TABLET OVERRIDE
+   Keep the normal Streamlit page flow on landscape tablets.
+   Do not force the whole app to 100dvh or hide page overflow.
    ========================================================== */
-@media screen and (orientation: landscape) and (max-width: 699px) {
-
-    header[data-testid="stHeader"],
-    [data-testid="stHeader"],
-    [data-testid="stToolbar"],
-    [data-testid="stDecoration"] {
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        max-height: 0 !important;
-    }
-
-    .stAppViewContainer,
-    .stAppViewContainer > .main,
-    section.main,
-    .main {
-        height: 100dvh !important;
-        min-height: 0 !important;
-        max-height: 100dvh !important;
-        overflow: hidden !important;
+@media screen and (orientation: landscape) and (min-width: 700px) {
+    html, body, .stApp {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
     }
 
     .main .block-container {
-        width: 100vw !important;
-        max-width: 100vw !important;
-        height: 100dvh !important;
-        min-height: 0 !important;
-        max-height: 100dvh !important;
-        padding: 2px 5px 2px !important;
-        margin: 0 !important;
-        overflow: hidden !important;
-    }
-
-    [data-testid="stVerticalBlock"] {
-        min-height: 0 !important;
+        width: 100% !important;
+        max-width: 1250px !important;
+        padding: 8px 12px 24px !important;
+        margin: 0 auto !important;
+        overflow: visible !important;
     }
 
     [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) {
-        height: calc(100dvh - 4px) !important;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+        width: 100% !important;
+        height: auto !important;
         min-height: 0 !important;
-        max-height: calc(100dvh - 4px) !important;
-        overflow: hidden !important;
-        align-items: stretch !important;
+        max-height: none !important;
+        overflow: visible !important;
     }
 
     [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) > [data-testid="stColumn"] {
-        height: 100% !important;
+        min-width: 0 !important;
+        height: auto !important;
         min-height: 0 !important;
-        max-height: 100% !important;
-        overflow: hidden !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) > [data-testid="stColumn"]:first-child {
+        flex: 1.55 1 0 !important;
+        width: auto !important;
+        max-width: none !important;
+    }
+
+    [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) > [data-testid="stColumn"]:last-child {
+        flex: 1 1 0 !important;
+        width: auto !important;
+        max-width: none !important;
     }
 
     .st-key-chat_area {
-        height: calc(100dvh - 58px) !important;
-        min-height: 0 !important;
-        max-height: calc(100dvh - 58px) !important;
+        width: 100% !important;
+        height: min(650px, calc(100vh - 190px)) !important;
+        max-height: min(650px, calc(100vh - 190px)) !important;
+        min-height: 420px !important;
         overflow-y: auto !important;
+        overflow-x: hidden !important;
     }
 
     .st-key-cart_area {
-        height: calc(100dvh - 8px) !important;
-        min-height: 0 !important;
-        max-height: calc(100dvh - 8px) !important;
+        width: 100% !important;
+        min-height: 420px !important;
+        height: auto !important;
+        max-height: min(650px, calc(100vh - 190px)) !important;
+        overflow: visible !important;
+    }
+
+    .st-key-cart_items_area {
+        max-height: min(360px, calc(100vh - 390px)) !important;
         overflow-y: auto !important;
+        overflow-x: hidden !important;
+    }
+}
+
+/* Prevent old mobile-only rules from affecting a normal tablet. */
+@media screen and (orientation: landscape) and (min-width: 1001px) {
+    .st-key-chat_area {
+        height: 650px !important;
+        max-height: 650px !important;
     }
 
-    /* Prevent the page itself from becoming taller than the screen. */
-    .stApp,
-    .stAppViewContainer,
-    [data-testid="stAppViewContainer"],
-    [data-testid="stMain"],
-    [data-testid="stMainBlockContainer"] {
-        overflow: hidden !important;
-    }
-
-    /* Keep the chatbot input inside the visible chat area. */
-    .st-key-chat_input_bar {
-        position: relative !important;
-        bottom: auto !important;
-        margin-top: 2px !important;
+    .st-key-cart_area {
+        max-height: none !important;
+        overflow: visible !important;
     }
 }
 
