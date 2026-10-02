@@ -3727,8 +3727,8 @@ def load_css():
             --border: #e7e9ee; 
         } 
 
-        .stApp { 
-            background: linear-gradient(180deg, #fffafd 0%, #ffffff 42%, #fff5fa 100%) !important; 
+        .stApp {
+            background: #fff5f8 !important;
         } 
 
         .main .block-container { 
@@ -3736,8 +3736,8 @@ def load_css():
             padding: 0.8rem 1.2rem 2rem !important; 
         } 
 
-        .st-key-chat_area { 
-            background: rgba(255,255,255,.96) !important; 
+        .st-key-chat_area {
+            background: #fff5f8 !important; 
             border: 1px solid #f7dce9 !important; 
             border-radius: 0 0 18px 18px !important; 
             padding: 0 1.1rem 1.2rem !important; 
@@ -3754,8 +3754,8 @@ def load_css():
             overflow-x: hidden !important; 
         } 
 
-        .st-key-cart_area { 
-            background: #ffffff !important; 
+        .st-key-cart_area {
+            background: #fff5f8 !important; 
             border: 1px solid #f0dce6 !important; 
             border-radius: 18px !important; 
             padding: 14px !important; 
@@ -4063,13 +4063,11 @@ def load_css():
 
             .st-key-chat_area {
                 width: 100% !important;
-                height: 390px !important;
-                max-height: 390px !important;
-                min-height: 390px !important;
-                padding: 0 5px 8px !important;
+                height: min(56svh, 560px) !important;
+                max-height: min(56svh, 560px) !important;
+                min-height: 380px !important;
+                padding: 0 5px 10px !important;
                 border-radius: 14px !important;
-                overflow-y: auto !important;
-                overflow-x: hidden !important;
             }
 
             .st-key-cart_area {
@@ -4163,8 +4161,8 @@ def load_css():
             }
 
             .chatgpt-welcome {
-                padding: 25px 10px 10px !important;
-                min-height: 190px !important;
+                padding: 38px 10px 12px !important;
+                min-height: 260px !important;
             }
 
             .welcome-row {
@@ -4552,105 +4550,13 @@ def load_css():
         }
 
         
-/* ==========================================================
-   FINAL RESPONSIVE TABLET OVERRIDE
-   Keep the normal Streamlit page flow on landscape tablets.
-   Do not force the whole app to 100dvh or hide page overflow.
-   ========================================================== */
-@media screen and (orientation: landscape) and (min-width: 700px) {
-    html, body, .stApp {
-        width: 100% !important;
-        max-width: 100% !important;
-        overflow-x: hidden !important;
-    }
-
-    .main .block-container {
-        width: 100% !important;
-        max-width: 1250px !important;
-        padding: 8px 12px 24px !important;
-        margin: 0 auto !important;
-        overflow: visible !important;
-    }
-
-    [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        align-items: flex-start !important;
-        gap: 10px !important;
-        width: 100% !important;
-        height: auto !important;
-        min-height: 0 !important;
-        max-height: none !important;
-        overflow: visible !important;
-    }
-
-    [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) > [data-testid="stColumn"] {
-        min-width: 0 !important;
-        height: auto !important;
-        min-height: 0 !important;
-        max-height: none !important;
-        overflow: visible !important;
-    }
-
-    [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) > [data-testid="stColumn"]:first-child {
-        flex: 1.55 1 0 !important;
-        width: auto !important;
-        max-width: none !important;
-    }
-
-    [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) > [data-testid="stColumn"]:last-child {
-        flex: 1 1 0 !important;
-        width: auto !important;
-        max-width: none !important;
-    }
-
-    .st-key-chat_area {
-        width: 100% !important;
-        height: min(650px, calc(100vh - 190px)) !important;
-        max-height: min(650px, calc(100vh - 190px)) !important;
-        min-height: 420px !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-    }
-
-    .st-key-cart_area {
-        width: 100% !important;
-        min-height: 420px !important;
-        height: auto !important;
-        max-height: min(650px, calc(100vh - 190px)) !important;
-        overflow: visible !important;
-    }
-
-    .st-key-cart_items_area {
-        max-height: min(360px, calc(100vh - 390px)) !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-    }
-}
-
-/* Prevent old mobile-only rules from affecting a normal tablet. */
-@media screen and (orientation: landscape) and (min-width: 1001px) {
-    .st-key-chat_area {
-        height: 650px !important;
-        max-height: 650px !important;
-    }
-
-    .st-key-cart_area {
-        max-height: none !important;
-        overflow: visible !important;
-    }
-}
-
-
 
         /* ==========================================================
-           FINAL TABLET / LANDSCAPE LAYOUT FIX
-           Target: 1280x720 and similar landscape tablets.
-           These rules are intentionally placed LAST so they override
-           earlier responsive rules in this file.
+           CLEAN TABLET / LANDSCAPE RESPONSIVE LAYOUT
+           One consolidated rule set. Avoids conflicting overrides.
            ========================================================== */
 
+        /* Landscape tablets: keep Chat + Cart side-by-side. */
         @media screen and (orientation: landscape) and (min-width: 700px) {
             html, body, .stApp {
                 width: 100% !important;
@@ -4664,6 +4570,7 @@ def load_css():
                 margin: 0 auto !important;
                 padding: 8px 12px 14px !important;
                 box-sizing: border-box !important;
+                overflow: visible !important;
             }
 
             [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) {
@@ -4674,12 +4581,16 @@ def load_css():
                 gap: 10px !important;
                 width: 100% !important;
                 margin: 0 !important;
+                overflow: visible !important;
             }
 
             [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) > [data-testid="stColumn"] {
                 min-width: 0 !important;
                 width: auto !important;
                 max-width: none !important;
+                height: auto !important;
+                min-height: 0 !important;
+                overflow: visible !important;
             }
 
             [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) > [data-testid="stColumn"]:first-child {
@@ -4692,56 +4603,29 @@ def load_css():
 
             .st-key-chat_area {
                 width: 100% !important;
-                height: min(500px, calc(100vh - 190px)) !important;
-                max-height: min(500px, calc(100vh - 190px)) !important;
-                min-height: 400px !important;
+                height: min(450px, calc(100vh - 210px)) !important;
+                max-height: min(450px, calc(100vh - 210px)) !important;
+                min-height: 320px !important;
                 box-sizing: border-box !important;
                 padding: 0 12px 10px !important;
                 margin: 0 !important;
                 overflow-y: auto !important;
                 overflow-x: hidden !important;
-                opacity: 1 !important;
-                visibility: visible !important;
             }
 
-            .st-key-chat_area > div,
-            .st-key-chat_area [data-testid="stVerticalBlock"] {
-                opacity: 1 !important;
-                visibility: visible !important;
-            }
-
-            .chatgpt-welcome {
-                min-height: 220px !important;
-                padding: 42px 18px 16px !important;
+            .st-key-cart_area {
+                width: 100% !important;
+                min-height: 320px !important;
+                height: auto !important;
+                max-height: 450px !important;
                 box-sizing: border-box !important;
-                opacity: 1 !important;
-                visibility: visible !important;
+                overflow: visible !important;
             }
 
-            .welcome-row {
-                gap: 16px !important;
-            }
-
-            .chatbot-avatar-large {
-                width: 60px !important;
-                height: 60px !important;
-                min-width: 60px !important;
-                font-size: 28px !important;
-            }
-
-            .chatgpt-welcome-title {
-                font-size: 26px !important;
-                line-height: 1.25 !important;
-            }
-
-            .chatgpt-welcome-subtitle {
-                font-size: 15px !important;
-                line-height: 1.45 !important;
-            }
-
-            .language-note {
-                margin: 30px 0 0 76px !important;
-                font-size: 14px !important;
+            .st-key-cart_items_area {
+                max-height: min(300px, calc(100vh - 400px)) !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
             }
 
             .st-key-chat_input_bar {
@@ -4749,8 +4633,8 @@ def load_css():
                 max-width: 100% !important;
                 margin: 8px 0 0 !important;
                 padding: 0 !important;
-                bottom: auto !important;
                 position: relative !important;
+                bottom: auto !important;
             }
 
             .st-key-chat_input_bar input {
@@ -4765,47 +4649,110 @@ def load_css():
                 min-height: 48px !important;
             }
 
-            .st-key-cart_area {
-                width: 100% !important;
-                min-height: 400px !important;
-                max-height: 500px !important;
+            .chatgpt-welcome {
+                min-height: 200px !important;
+                padding: 34px 18px 16px !important;
                 box-sizing: border-box !important;
-                overflow-y: auto !important;
-                overflow-x: hidden !important;
-                opacity: 1 !important;
-                visibility: visible !important;
             }
 
-            .st-key-cart_area > div,
-            .st-key-cart_area [data-testid="stVerticalBlock"] {
-                opacity: 1 !important;
-                visibility: visible !important;
+            .chatgpt-welcome-title {
+                font-size: 24px !important;
+                line-height: 1.25 !important;
+            }
+
+            .chatgpt-welcome-subtitle {
+                font-size: 14px !important;
+                line-height: 1.45 !important;
+            }
+
+            .st-key-chat_area *,
+            .st-key-cart_area * {
+                max-width: 100%;
+                overflow-wrap: anywhere;
+                word-break: break-word;
             }
         }
 
-        /* 1280x720 / short landscape tablet: keep everything visible. */
-        @media screen and (orientation: landscape) and (min-width: 1000px) and (max-height: 800px) {
+        /* Short landscape tablets: use a smaller chat surface. */
+        @media screen and (orientation: landscape)
+            and (min-width: 700px)
+            and (max-height: 800px) {
+
             .main .block-container {
                 padding-top: 5px !important;
                 padding-bottom: 8px !important;
             }
 
             .st-key-chat_area {
-                height: 480px !important;
-                max-height: 480px !important;
-                min-height: 380px !important;
-            }
-
-            .chatgpt-welcome {
-                min-height: 190px !important;
-                padding-top: 32px !important;
+                height: min(410px, calc(100vh - 190px)) !important;
+                max-height: min(410px, calc(100vh - 190px)) !important;
+                min-height: 300px !important;
             }
 
             .st-key-cart_area {
-                min-height: 380px !important;
-                max-height: 480px !important;
+                min-height: 300px !important;
+                max-height: 410px !important;
+            }
+
+            .chatgpt-welcome {
+                min-height: 180px !important;
+                padding-top: 28px !important;
             }
         }
+
+        /* Portrait phones and tablets: stack Chat above Cart. */
+        @media screen and (max-width: 900px) and (orientation: portrait) {
+
+            html, body, .stApp {
+                width: 100% !important;
+                max-width: 100% !important;
+                overflow-x: hidden !important;
+            }
+
+            .main .block-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 6px 8px 16px !important;
+            }
+
+            [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) {
+                display: flex !important;
+                flex-direction: column !important;
+                flex-wrap: nowrap !important;
+                align-items: stretch !important;
+                gap: 10px !important;
+                width: 100% !important;
+            }
+
+            [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) > [data-testid="stColumn"] {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+                flex: 1 1 auto !important;
+            }
+
+            .st-key-chat_area {
+                width: 100% !important;
+                height: min(450px, 56svh) !important;
+                max-height: min(450px, 56svh) !important;
+                min-height: 300px !important;
+                padding: 0 5px 10px !important;
+            }
+
+            .st-key-cart_area {
+                width: 100% !important;
+                min-height: 0 !important;
+                height: auto !important;
+                max-height: none !important;
+                padding: 12px !important;
+                overflow: visible !important;
+            }
+
+            .st-key-cart_items_area {
+                max-height: 300px !important;
+            }
+        }
+
 </style> 
         """, 
         unsafe_allow_html=True 
@@ -5831,9 +5778,11 @@ def render(user):
     # LAYOUT 
     # ====================================================== 
 
-    left_column, right_column = st.columns( 
-        [1.55, 1.0], 
-        gap="small" 
+    left_column, right_column = st.columns(
+        [1.55, 1.0],
+        gap="small",
+        vertical_alignment="top",
+        wrap=True,
     ) 
 
     # ====================================================== 
@@ -5845,8 +5794,8 @@ def render(user):
         # Fixed-height message area: new messages are added inside this 
         # scrollable region instead of pushing the whole page downward. 
         with st.container( 
-            key="chat_area", 
-            height=500, 
+            key="chat_area",
+            height=450, 
             border=False 
         ): 
 
