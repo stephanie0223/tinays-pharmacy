@@ -4640,6 +4640,170 @@ def load_css():
     }
 }
 
+
+
+        /* ==========================================================
+           FINAL TABLET / LANDSCAPE LAYOUT FIX
+           Target: 1280x720 and similar landscape tablets.
+           These rules are intentionally placed LAST so they override
+           earlier responsive rules in this file.
+           ========================================================== */
+
+        @media screen and (orientation: landscape) and (min-width: 700px) {
+            html, body, .stApp {
+                width: 100% !important;
+                max-width: 100% !important;
+                overflow-x: hidden !important;
+            }
+
+            .main .block-container {
+                width: 100% !important;
+                max-width: 1250px !important;
+                margin: 0 auto !important;
+                padding: 8px 12px 14px !important;
+                box-sizing: border-box !important;
+            }
+
+            [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+                width: 100% !important;
+                margin: 0 !important;
+            }
+
+            [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) > [data-testid="stColumn"] {
+                min-width: 0 !important;
+                width: auto !important;
+                max-width: none !important;
+            }
+
+            [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) > [data-testid="stColumn"]:first-child {
+                flex: 1.55 1 0 !important;
+            }
+
+            [data-testid="stHorizontalBlock"]:has(.st-key-chat_area) > [data-testid="stColumn"]:last-child {
+                flex: 1 1 0 !important;
+            }
+
+            .st-key-chat_area {
+                width: 100% !important;
+                height: min(500px, calc(100vh - 190px)) !important;
+                max-height: min(500px, calc(100vh - 190px)) !important;
+                min-height: 400px !important;
+                box-sizing: border-box !important;
+                padding: 0 12px 10px !important;
+                margin: 0 !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+
+            .st-key-chat_area > div,
+            .st-key-chat_area [data-testid="stVerticalBlock"] {
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+
+            .chatgpt-welcome {
+                min-height: 220px !important;
+                padding: 42px 18px 16px !important;
+                box-sizing: border-box !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+
+            .welcome-row {
+                gap: 16px !important;
+            }
+
+            .chatbot-avatar-large {
+                width: 60px !important;
+                height: 60px !important;
+                min-width: 60px !important;
+                font-size: 28px !important;
+            }
+
+            .chatgpt-welcome-title {
+                font-size: 26px !important;
+                line-height: 1.25 !important;
+            }
+
+            .chatgpt-welcome-subtitle {
+                font-size: 15px !important;
+                line-height: 1.45 !important;
+            }
+
+            .language-note {
+                margin: 30px 0 0 76px !important;
+                font-size: 14px !important;
+            }
+
+            .st-key-chat_input_bar {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 8px 0 0 !important;
+                padding: 0 !important;
+                bottom: auto !important;
+                position: relative !important;
+            }
+
+            .st-key-chat_input_bar input {
+                font-size: 16px !important;
+            }
+
+            .st-key-chat_input_bar .stButton > button,
+            .st-key-chat_input_bar button {
+                width: 48px !important;
+                min-width: 48px !important;
+                height: 48px !important;
+                min-height: 48px !important;
+            }
+
+            .st-key-cart_area {
+                width: 100% !important;
+                min-height: 400px !important;
+                max-height: 500px !important;
+                box-sizing: border-box !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+
+            .st-key-cart_area > div,
+            .st-key-cart_area [data-testid="stVerticalBlock"] {
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+        }
+
+        /* 1280x720 / short landscape tablet: keep everything visible. */
+        @media screen and (orientation: landscape) and (min-width: 1000px) and (max-height: 800px) {
+            .main .block-container {
+                padding-top: 5px !important;
+                padding-bottom: 8px !important;
+            }
+
+            .st-key-chat_area {
+                height: 480px !important;
+                max-height: 480px !important;
+                min-height: 380px !important;
+            }
+
+            .chatgpt-welcome {
+                min-height: 190px !important;
+                padding-top: 32px !important;
+            }
+
+            .st-key-cart_area {
+                min-height: 380px !important;
+                max-height: 480px !important;
+            }
+        }
 </style> 
         """, 
         unsafe_allow_html=True 
@@ -5680,7 +5844,7 @@ def render(user):
         # scrollable region instead of pushing the whole page downward. 
         with st.container( 
             key="chat_area", 
-            height=650, 
+            height=500, 
             border=False 
         ): 
 
