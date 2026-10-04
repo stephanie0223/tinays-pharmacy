@@ -4,6 +4,7 @@ import os
 import textwrap 
 import json 
 import asyncio
+import base64
 import requests 
 import streamlit.components.v1 as components 
 from datetime import datetime 
@@ -134,6 +135,121 @@ def get_gemini_client():
         ) 
     except Exception: 
         return None 
+
+
+# ==========================================================
+# GEMINI REST API FALLBACK
+# ==========================================================
+
+def get_gemini_api_key():
+    """Read the Gemini API key from Streamlit Cloud secrets or environment."""
+    api_key = None
+
+    try:
+        api_key = st.secrets.get("GEMINI_API_KEY")
+    except Exception:
+        api_key = None
+
+    if not api_key:
+        api_key = os.getenv("GEMINI_API_KEY")
+
+    if isinstance(api_key, str):
+        api_key = api_key.strip().strip('"').strip("'")
+
+    return api_key or None
+
+
+def ask_gemini_rest(system_prompt):
+    """Call Gemini directly over HTTPS for Streamlit Cloud reliability."""
+    api_key = get_gemini_api_key()
+
+    if not api_key:
+        raise RuntimeError(
+            "GEMINI_API_KEY is missing from Streamlit Secrets."
+        )
+
+    models_to_try = [
+        GEMINI_MODEL,
+        "gemini-3.8-flash",
+    ]
+
+    last_error = None
+
+    for model in models_to_try:
+        url = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{model}:generateContent"
+        )
+
+        payload = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [
+                        {"text": system_prompt}
+                    ],
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.2,
+            },
+        }
+
+        try:
+            response = requests.post(
+                url,
+                params={"key": api_key},
+                json=payload,
+                timeout=60,
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                candidates = data.get("candidates") or []
+
+                if candidates:
+                    parts = (
+                        candidates[0]
+                        .get("content", {})
+                        .get("parts", [])
+                    )
+                    text = "".join(
+                        str(part.get("text", ""))
+                        for part in parts
+                        if isinstance(part, dict)
+                    ).strip()
+
+                    if text:
+                        return text
+
+                raise RuntimeError(
+                    "Gemini returned an empty response."
+                )
+
+            try:
+                error_data = response.json()
+                error_message = (
+                    error_data.get("error", {})
+                    .get("message", response.text[:300])
+                )
+            except Exception:
+                error_message = response.text[:300]
+
+            last_error = RuntimeError(
+                f"Gemini API {response.status_code}: {error_message}"
+            )
+
+            # Try the next stable model for model/access errors.
+            continue
+
+        except requests.RequestException as exc:
+            last_error = exc
+            continue
+
+    if last_error:
+        raise last_error
+
+    raise RuntimeError("Gemini API request failed.")
 
 
 # ========================================================== 
@@ -1052,36 +1168,46 @@ CUSTOMER QUESTION
 
 """ 
 
-    try: 
+    try:
+        # Streamlit Cloud can use the HTTPS Gemini API directly even if the
+        # google-genai package is unavailable.
+        if client is None:
+            return ask_gemini_rest(system_prompt)
 
-        response = client.models.generate_content( 
-            model=GEMINI_MODEL, 
-            contents=system_prompt 
-        ) 
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=system_prompt
+        )
 
-        if response and response.text: 
-            return response.text.strip() 
+        if response and response.text:
+            return response.text.strip()
 
-        return ( 
-            "Pasensya, wala nakahatag sang sabat ang Gemini. " 
-            "Palihog sulayi liwat." 
-        ) 
+        raise RuntimeError("Gemini returned an empty response.")
 
-    except Exception: 
-
-        # Gemini 429 quota/rate-limit errors, 503 errors, network errors,
-        # missing configuration, and other API failures automatically use
-        # the local Ollama model. The customer never sees the Gemini error.
-        try: 
-            return ask_ollama(
-                system_prompt,
-                user_question
-            ) 
-        except Exception: 
-            return ( 
-                "Pasensya, temporarily unavailable ang AI chatbot.\n\n" 
-                "Palihog sulayi liwat pagkatapos sang pila ka segundo." 
-            ) 
+    except Exception as gemini_error:
+        # Retry through the direct REST API. This also handles SDK/version
+        # mismatches and transient Gemini SDK errors on Streamlit Cloud.
+        try:
+            return ask_gemini_rest(system_prompt)
+        except Exception:
+            # Ollama only works when the app is running on the same machine
+            # as Ollama. It is normally unavailable on Streamlit Cloud.
+            try:
+                return ask_ollama(
+                    system_prompt,
+                    user_question
+                )
+            except Exception:
+                # Keep the customer-facing message friendly while preserving
+                # the actual failure in Streamlit logs for debugging.
+                print(
+                    "Gemini chatbot error:",
+                    repr(gemini_error)
+                )
+                return (
+                    "Pasensya, temporarily unavailable ang AI chatbot.\n\n"
+                    "Palihog sulayi liwat pagkatapos sang pila ka segundo."
+                )
 
 
 
@@ -1670,379 +1796,509 @@ def clear_cart_after_reference_slip():
     st.session_state.reference_slip_cart = [] 
 
 
-# ========================================================== 
-# REFERENCE SLIP HTML 
-# ========================================================== 
-
-def build_reference_slip_html(cart): 
-
-    if not cart: 
-        return "" 
-
-    request_number = ( 
-        st.session_state.get("request_number") 
-        or generate_request_number() 
-    ) 
-
-    now = datetime.now().strftime( 
-        "%B %d, %Y %I:%M %p" 
-    ) 
-
-    total = calculate_reference_slip_total(cart) 
-
-    rows = "" 
-
-    for item in cart: 
-
-        name = html.escape( 
-            str(item.get("name", "")) 
-        ) 
-
-        generic = html.escape( 
-            str(item.get("generic_name", "N/A")) 
-        ) 
-
-        quantity = int( 
-            item.get("quantity", 0) or 0 
-        ) 
-
-        try: 
-            price = float( 
-                item.get("price", 0) or 0 
-            ) 
-        except Exception: 
-            price = 0.0 
-
-        subtotal = price * quantity 
-
-        rows += f""" 
-        <tr> 
-            <td>{name}</td> 
-            <td>{generic}</td> 
-            <td class="center">{quantity}</td> 
-            <td class="money">₱{price:,.2f}</td> 
-            <td class="money">₱{subtotal:,.2f}</td> 
-        </tr> 
-        """ 
-
-    reference_slip_html = f""" 
-    <!DOCTYPE html> 
-    <html> 
-    <head> 
-        <meta charset="UTF-8"> 
-
-        <style> 
-            * {{ 
-                box-sizing: border-box; 
-            }} 
-
-            html, 
-            body {{ 
-                margin: 0; 
-                padding: 0; 
-                background: transparent; 
-                font-family: Arial, Helvetica, sans-serif; 
-                color: #111111; 
-            }} 
-
-            body {{ 
-                padding: 8px 0 10px; 
-            }} 
-
-            /* ================================================== 
-               REFERENCE SLIP PAPER 
-               Looks like the uploaded reference while keeping 
-               thermal-reference slip proportions. 
-               ================================================== */ 
-
-            .reference-slip {{ 
-                width: 80mm; 
-                max-width: 80mm; 
-                min-height: 125mm; 
-                margin: 0 auto; 
-                padding: 7mm 5mm 5mm; 
-                background: #ffffff; 
-                color: #111111; 
-                border: 1px solid #eeeeee; 
-                border-radius: 2px; 
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10); 
-            }} 
-
-            .header {{ 
-                text-align: center; 
-            }} 
-
-            .logo {{ 
-                width: 43px; 
-                height: 43px; 
-                margin: 0 auto 8px; 
-                border-radius: 50%; 
-                background: #f02b86; 
-                display: flex; 
-                align-items: center; 
-                justify-content: center; 
-                font-size: 23px; 
-            }} 
-
-            .pharmacy-name {{ 
-                color: #c90059; 
-                font-size: 19px; 
-                line-height: 1.05; 
-                font-weight: 900; 
-                letter-spacing: 0.2px; 
-                margin-bottom: 6px; 
-            }} 
-
-            .tagline {{ 
-                color: #111111; 
-                font-size: 11px; 
-                line-height: 1.35; 
-            }} 
-
-            .line {{ 
-                border-top: 2px dashed #777777; 
-                margin: 13px 0 11px; 
-            }} 
-
-            .info {{ 
-                font-size: 11px; 
-                line-height: 1.65; 
-            }} 
-
-            .info b {{ 
-                font-weight: 800; 
-            }} 
-
-            .title {{ 
-                font-size: 17px; 
-                line-height: 1.1; 
-                font-weight: 900; 
-                margin: 17px 0 10px; 
-                color: #111111; 
-                letter-spacing: 0.2px; 
-            }} 
-
-            table {{ 
-                width: 100%; 
-                border-collapse: collapse; 
-                table-layout: fixed; 
-                font-size: 9px; 
-            }} 
-
-            th {{ 
-                background: #f9c9df; 
-                color: #9d0b4e; 
-                padding: 8px 4px; 
-                text-align: left; 
-                font-size: 9px; 
-                font-weight: 800; 
-                border: none; 
-            }} 
-
-            th:nth-child(1) {{ width: 24%; }} 
-            th:nth-child(2) {{ width: 27%; }} 
-            th:nth-child(3) {{ width: 11%; text-align: center; }} 
-            th:nth-child(4) {{ width: 18%; }} 
-            th:nth-child(5) {{ width: 20%; }} 
-
-            td {{ 
-                padding: 8px 4px; 
-                border-bottom: 1px dotted #bdbdbd; 
-                vertical-align: top; 
-                word-break: break-word; 
-                line-height: 1.2; 
-            }} 
-
-            td.center {{ 
-                text-align: center; 
-            }} 
-
-            td.money {{ 
-                white-space: nowrap; 
-            }} 
-
-            .total {{ 
-                text-align: right; 
-                color: #c90059; 
-                font-size: 19px; 
-                line-height: 1.1; 
-                font-weight: 900; 
-                margin-top: 16px; 
-            }} 
-
-            .verification {{ 
-                background: #fff6c9; 
-                border: 2px solid #f0b800; 
-                border-radius: 9px; 
-                padding: 13px 10px; 
-                margin-top: 18px; 
-                text-align: center; 
-                font-size: 10px; 
-                line-height: 1.45; 
-                color: #111111; 
-            }} 
-
-            .verification-title {{ 
-                font-size: 12px; 
-                font-weight: 900; 
-                margin-bottom: 7px; 
-            }} 
-
-            .verification p {{ 
-                margin: 0 0 9px; 
-            }} 
-
-            .verification p:last-child {{ 
-                margin-bottom: 0; 
-            }} 
-
-            .footer {{ 
-                text-align: center; 
-                font-size: 10px; 
-                color: #666666; 
-                margin: 18px 0 13px; 
-            }} 
-
-            .print-button {{ 
-                display: block; 
-                width: 100%; 
-                min-height: 43px; 
-                margin: 0 auto; 
-                padding: 10px 8px; 
-                background: #ed0b67; 
-                color: #ffffff; 
-                border: none; 
-                border-radius: 8px; 
-                font-size: 13px; 
-                font-weight: 800; 
-                cursor: pointer; 
-                box-shadow: none; 
-            }} 
-
-            .print-button:hover {{ 
-                background: #d9075d; 
-            }} 
-
-            @media print {{ 
-
-                @page {{ 
-                    size: 80mm auto; 
-                    margin: 0; 
-                }} 
-
-                html, 
-                body {{ 
-                    width: 80mm; 
-                    min-width: 80mm; 
-                    background: #ffffff; 
-                    padding: 0; 
-                    margin: 0; 
-                }} 
-
-                body {{ 
-                    padding: 0; 
-                }} 
-
-                .reference-slip {{ 
-                    width: 80mm; 
-                    max-width: 80mm; 
-                    min-height: 0; 
-                    margin: 0; 
-                    padding: 5mm 4mm 4mm; 
-                    border: none; 
-                    border-radius: 0; 
-                    box-shadow: none; 
-                }} 
-
-                .print-button {{ 
-                    display: none; 
-                }} 
-            }} 
-        </style> 
-    </head> 
-
-    <body> 
-        <div class="reference-slip"> 
-
-            <div class="header"> 
-
-                <div class="logo">💊</div> 
-
-                <div class="pharmacy-name"> 
-                    TINAY'S PHARMACY 
-                </div> 
-
-                <div class="tagline"> 
-                    From Pills to Wellness,<br> 
-                    Your Pharmacy Partner 
-                </div> 
-
-            </div> 
-
-            <div class="line"></div> 
-
-            <div class="info"> 
-                <b>Request No:</b> 
-                <b>{html.escape(request_number)}</b> 
-                <br> 
-                <b>Date:</b> 
-                {html.escape(now)} 
-            </div> 
-
-            <div class="title"> 
-                MEDICINE REQUEST 
-            </div> 
-
-            <table> 
-                <thead> 
-                    <tr> 
-                        <th>Medicine</th> 
-                        <th>Generic</th> 
-                        <th>Qty</th> 
-                        <th>Price</th> 
-                        <th>Total</th> 
-                    </tr> 
-                </thead> 
-
-                <tbody> 
-                    {rows} 
-                </tbody> 
-            </table> 
-
-            <div class="total"> 
-                TOTAL: ₱{total:,.2f} 
-            </div> 
-
-            <div class="verification"> 
-                <div class="verification-title"> 
-                    ⚠️ &nbsp; PHARMACIST VERIFICATION REQUIRED 
-                </div> 
-
-                <p> 
-                    This is an order request only. 
-                </p> 
-
-                <p> 
-                    The medicine will <b>NOT</b> be released 
-                    until a pharmacist verifies the request. 
-                </p> 
-
-                <p> 
-                    Inventory is <b>NOT</b> automatically 
-                    deducted when this request is submitted. 
-                </p> 
-            </div> 
-
-            <div class="footer"> 
-                Thank you for choosing Tinay's Pharmacy! 💗 
-            </div> 
-
-        </div> 
-    </body> 
-    </html> 
-    """ 
-
-    return reference_slip_html 
+# ==========================================================
+# REFERENCE SLIP HTML
+# ==========================================================
+
+def build_reference_slip_html(cart):
+
+    if not cart:
+        return ""
+
+    request_number = (
+        st.session_state.get("request_number")
+        or generate_request_number()
+    )
+
+    now = datetime.now().strftime(
+        "%b %d, %Y %I:%M %p"
+    )
+
+    total = calculate_reference_slip_total(cart)
+
+    medicine_blocks = ""
+
+    for item in cart:
+
+        name = html.escape(
+            str(item.get("name", ""))
+        )
+
+        generic = html.escape(
+            str(item.get("generic_name", "N/A"))
+        )
+
+        quantity = int(
+            item.get("quantity", 0) or 0
+        )
+
+        try:
+            price = float(
+                item.get("price", 0) or 0
+            )
+        except Exception:
+            price = 0.0
+
+        subtotal = price * quantity
+
+        medicine_blocks += f"""
+        <div class="medicine-item">
+
+            <div class="medicine-name">
+                {name}
+            </div>
+
+            <div class="generic">
+                Generic: {generic}
+            </div>
+
+            <div class="medicine-row">
+                <span>
+                    Qty {quantity}
+                </span>
+
+                <span>
+                    ₱{price:,.2f}
+                </span>
+
+                <span>
+                    ₱{subtotal:,.2f}
+                </span>
+            </div>
+
+        </div>
+        """
+
+    reference_slip_html = f"""
+    <!DOCTYPE html>
+
+    <html>
+
+    <head>
+
+        <meta charset="UTF-8">
+
+        <style>
+
+            * {{
+                box-sizing: border-box;
+            }}
+
+            html,
+            body {{
+                margin: 0;
+                padding: 0;
+                background: transparent;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #111111;
+            }}
+
+            body {{
+                padding: 8px 0;
+            }}
+
+            /* ==================================================
+               RECEIPT PAPER
+               ================================================== */
+
+            .reference-slip {{
+                width: 80mm;
+                max-width: 80mm;
+                min-height: 120mm;
+
+                margin: 0 auto;
+
+                padding: 7mm 5mm 6mm;
+
+                background: #ffffff;
+
+                color: #111111;
+
+                border: 1px solid #eeeeee;
+
+                box-shadow:
+                    0 5px 18px rgba(0, 0, 0, 0.10);
+            }}
+
+            /* ==================================================
+               HEADER
+               ================================================== */
+
+            .header {{
+                text-align: center;
+            }}
+
+            .pharmacy-name {{
+                font-size: 19px;
+
+                font-weight: 800;
+
+                letter-spacing: 0.2px;
+
+                line-height: 1.15;
+
+                margin-bottom: 3px;
+
+                color: #222222;
+            }}
+
+            .request-title {{
+                font-size: 17px;
+
+                font-weight: 900;
+
+                letter-spacing: 0.2px;
+
+                line-height: 1.15;
+
+                color: #111111;
+            }}
+
+            /* ==================================================
+               SEPARATOR
+               ================================================== */
+
+            .separator {{
+                border-top: 1.5px dashed #777777;
+
+                margin: 14px 0 12px;
+            }}
+
+            /* ==================================================
+               REQUEST INFORMATION
+               ================================================== */
+
+            .info {{
+                font-size: 10.5px;
+
+                line-height: 1.65;
+
+                color: #222222;
+
+                text-align: left;
+            }}
+
+            .info-row {{
+                display: flex;
+
+                align-items: flex-start;
+
+                gap: 4px;
+            }}
+
+            .info-label {{
+                white-space: nowrap;
+
+                font-weight: 700;
+            }}
+
+            .info-value {{
+                word-break: break-word;
+            }}
+
+            /* ==================================================
+               MEDICINE
+               ================================================== */
+
+            .medicine-item {{
+                padding: 8px 0 11px;
+
+                border-bottom: 1.5px dashed #777777;
+            }}
+
+            .medicine-item:last-child {{
+                border-bottom: none;
+            }}
+
+            .medicine-name {{
+                font-size: 15px;
+
+                font-weight: 800;
+
+                line-height: 1.25;
+
+                margin-bottom: 2px;
+            }}
+
+            .generic {{
+                font-size: 10.5px;
+
+                color: #555555;
+
+                line-height: 1.4;
+
+                margin-bottom: 7px;
+            }}
+
+            .medicine-row {{
+                display: grid;
+
+                grid-template-columns:
+                    1fr 1fr 1fr;
+
+                column-gap: 5px;
+
+                font-size: 10.5px;
+
+                color: #222222;
+            }}
+
+            .medicine-row span:nth-child(1) {{
+                text-align: left;
+            }}
+
+            .medicine-row span:nth-child(2),
+            .medicine-row span:nth-child(3) {{
+                text-align: right;
+            }}
+
+            /* ==================================================
+               TOTAL
+               ================================================== */
+
+            .total {{
+                text-align: center;
+
+                font-size: 19px;
+
+                font-weight: 900;
+
+                line-height: 1.15;
+
+                margin: 16px 0 17px;
+
+                color: #111111;
+            }}
+
+            /* ==================================================
+               PHARMACIST VERIFICATION
+               ================================================== */
+
+            .verification {{
+                text-align: center;
+
+                padding: 0 3px;
+
+                color: #222222;
+            }}
+
+            .verification-title {{
+                font-size: 13px;
+
+                font-weight: 900;
+
+                line-height: 1.25;
+
+                margin-bottom: 8px;
+            }}
+
+            .verification p {{
+                font-size: 9.5px;
+
+                line-height: 1.45;
+
+                margin: 5px 0;
+
+                color: #555555;
+            }}
+
+            .verification b {{
+                color: #333333;
+            }}
+
+            /* ==================================================
+               FOOTER
+               ================================================== */
+
+            .footer {{
+                text-align: center;
+
+                font-size: 9.5px;
+
+                color: #777777;
+
+                margin-top: 20px;
+
+                line-height: 1.4;
+            }}
+
+            /* ==================================================
+               PRINT
+               ================================================== */
+
+            @media print {{
+
+                @page {{
+                    size: 80mm auto;
+
+                    margin: 0;
+                }}
+
+                html,
+                body {{
+                    width: 80mm;
+
+                    min-width: 80mm;
+
+                    margin: 0;
+
+                    padding: 0;
+
+                    background: #ffffff;
+                }}
+
+                .reference-slip {{
+                    width: 80mm;
+
+                    max-width: 80mm;
+
+                    min-height: 0;
+
+                    margin: 0;
+
+                    padding: 5mm 4mm 5mm;
+
+                    border: none;
+
+                    box-shadow: none;
+                }}
+
+            }}
+
+        </style>
+
+    </head>
+
+
+    <body>
+
+        <div class="reference-slip">
+
+
+            <!-- ==========================================
+                 HEADER
+                 ========================================== -->
+
+            <div class="header">
+
+                <div class="pharmacy-name">
+                    Tinay's Pharmacy
+                </div>
+
+                <div class="request-title">
+                    MEDICINE REQUEST
+                </div>
+
+            </div>
+
+
+            <!-- ==========================================
+                 REQUEST INFORMATION
+                 ========================================== -->
+
+            <div class="separator"></div>
+
+            <div class="info">
+
+                <div class="info-row">
+
+                    <span class="info-label">
+                        Request No:
+                    </span>
+
+                    <span class="info-value">
+                        {html.escape(request_number)}
+                    </span>
+
+                </div>
+
+
+                <div class="info-row">
+
+                    <span class="info-label">
+                        Date:
+                    </span>
+
+                    <span class="info-value">
+                        {html.escape(now)}
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==========================================
+                 MEDICINE ITEMS
+                 ========================================== -->
+
+            <div class="separator"></div>
+
+            {medicine_blocks}
+
+
+            <!-- ==========================================
+                 TOTAL
+                 ========================================== -->
+
+            <div class="total">
+
+                TOTAL: ₱{total:,.2f}
+
+            </div>
+
+
+            <!-- ==========================================
+                 VERIFICATION
+                 ========================================== -->
+
+            <div class="verification">
+
+                <div class="verification-title">
+
+                    PHARMACIST VERIFICATION REQUIRED
+
+                </div>
+
+
+                <p>
+                    This is an order request only.
+                </p>
+
+
+                <p>
+                    The medicine will <b>NOT</b> be released
+                    until a pharmacist verifies the request.
+                </p>
+
+
+                <p>
+                    Inventory is <b>NOT</b> automatically deducted
+                    when this request is submitted.
+                </p>
+
+            </div>
+
+
+            <!-- ==========================================
+                 FOOTER
+                 ========================================== -->
+
+            <div class="footer">
+
+                Thank you for choosing Tinay's Pharmacy!
+
+            </div>
+
+
+        </div>
+
+    </body>
+
+    </html>
+    """
+
+    return reference_slip_html
 
 
 # ========================================================== 
@@ -2071,6 +2327,7 @@ MXW01_MIN_PRINT_LINES = 90
 MXW01_CONTROL_UUID = "0000ae01-0000-1000-8000-00805f9b34fb" 
 MXW01_NOTIFY_UUID = "0000ae02-0000-1000-8000-00805f9b34fb" 
 MXW01_DATA_UUID = "0000ae03-0000-1000-8000-00805f9b34fb" 
+MXW01_SERVICE_UUID = "0000ae30-0000-1000-8000-00805f9b34fb" 
 
 
 def _mxw01_crc8(data): 
@@ -2144,203 +2401,361 @@ async def _mxw01_find_device():
     )
 
 
-def _mxw01_slip_image(cart): 
-    """Render the pharmacy reference slip as a 384px 1-bit image.""" 
-    from PIL import Image, ImageDraw, ImageFont 
+def _mxw01_slip_image(cart):
+    """Render the printed MXW01 slip to closely match the on-screen reference slip."""
+    from PIL import Image, ImageDraw, ImageFont
 
-    width = MXW01_PRINT_WIDTH 
-    margin = 18 
+    width = MXW01_PRINT_WIDTH
+    left = 18
+    right = width - 18
 
-    # Use Windows fonts when available; fall back to Pillow's font. 
-    font_candidates = [ 
-        r"C:\Windows\Fonts\arial.ttf", 
-        r"C:\Windows\Fonts\segoeui.ttf", 
-    ] 
-    bold_candidates = [ 
-        r"C:\Windows\Fonts\arialbd.ttf", 
-        r"C:\Windows\Fonts\segoeuib.ttf", 
-    ] 
+    font_candidates = [
+        r"C:\Windows\Fonts\arial.ttf",
+        r"C:\Windows\Fonts\segoeui.ttf",
+    ]
+    bold_candidates = [
+        r"C:\Windows\Fonts\arialbd.ttf",
+        r"C:\Windows\Fonts\segoeuib.ttf",
+    ]
 
-    def load_font(candidates, size): 
-        for path in candidates: 
-            if os.path.exists(path): 
-                try: 
-                    return ImageFont.truetype(path, size) 
-                except Exception: 
-                    pass 
-        return ImageFont.load_default() 
+    def load_font(candidates, size):
+        for font_path in candidates:
+            if os.path.exists(font_path):
+                try:
+                    return ImageFont.truetype(font_path, size)
+                except Exception:
+                    pass
+        return ImageFont.load_default()
 
-    regular = load_font(font_candidates, 17) 
-    small = load_font(font_candidates, 14) 
-    bold = load_font(bold_candidates, 18) 
-    title_font = load_font(bold_candidates, 22) 
+    regular = load_font(font_candidates, 13)
+    small = load_font(font_candidates, 11)
+    table_font = load_font(font_candidates, 10)
+    bold = load_font(bold_candidates, 14)
+    title_font = load_font(bold_candidates, 19)
+    total_font = load_font(bold_candidates, 22)
+    header_font = load_font(bold_candidates, 10)
 
-    lines = [] 
-    lines.append(("Tinay's Pharmacy", title_font, "center")) 
-    lines.append(("MEDICINE REQUEST", bold, "center")) 
-    lines.append(("", regular, "left")) 
+    request_number = (
+        st.session_state.get("request_number")
+        or generate_request_number()
+    )
+    now = datetime.now().strftime("%B %d, %Y %I:%M %p")
 
-    request_number = ( 
-        st.session_state.get("request_number") 
-        or generate_request_number() 
-    ) 
-    now = datetime.now().strftime("%b %d, %Y %I:%M %p") 
-    lines.append((f"Request No: {request_number}", small, "left")) 
-    lines.append((f"Date: {now}", small, "left")) 
-    lines.append(("-" * 46, small, "center")) 
+    items = []
+    total = 0.0
+    for item in cart:
+        name = str(item.get("name", "Medicine"))
+        generic = str(item.get("generic_name", "N/A"))
+        quantity = int(item.get("quantity", 0) or 0)
+        try:
+            price = float(item.get("price", 0) or 0)
+        except Exception:
+            price = 0.0
+        subtotal = price * quantity
+        total += subtotal
+        items.append((name, generic, quantity, price, subtotal))
 
-    total = 0.0 
+    # Build the slip from the same visual sections as the reference-slip HTML:
+    # logo/header -> request details -> medicine table -> total ->
+    # pharmacist-verification box -> footer.
+    dummy = Image.new("1", (width, 100), 1)
+    measure = ImageDraw.Draw(dummy)
 
-    for item in cart: 
-        name = str( 
-            item.get("name", "Medicine") 
-        ) 
-        generic = str( 
-            item.get("generic_name", "N/A") 
-        ) 
-        quantity = int( 
-            item.get("quantity", 0) or 0 
-        ) 
+    def text_width(text, font):
+        box = measure.textbbox((0, 0), text, font=font)
+        return box[2] - box[0]
 
-        try: 
-            price = float( 
-                item.get("price", 0) or 0 
-            ) 
-        except Exception: 
-            price = 0.0 
+    def centered(draw, y, text, font):
+        w = text_width(text, font)
+        draw.text(((width - w) // 2, y), text, fill=0, font=font)
 
-        subtotal = price * quantity 
-        total += subtotal 
+    def wrap(text, max_width, font):
+        words = str(text).split()
+        if not words:
+            return [""]
+        result = []
+        current = ""
+        for word in words:
+            candidate = word if not current else current + " " + word
+            if text_width(candidate, font) <= max_width:
+                current = candidate
+            else:
+                if current:
+                    result.append(current)
+                current = word
+        if current:
+            result.append(current)
+        return result or [""]
 
-        wrapped_name = ( 
-            textwrap.wrap(name, width=30) 
-            or [name] 
-        ) 
+    # Estimate the required height first.
+    table_rows = []
+    for name, generic, quantity, price, subtotal in items:
+        name_lines = wrap(name, 82, table_font)
+        generic_lines = wrap(generic, 91, table_font)
+        table_rows.append((name_lines, generic_lines, quantity, price, subtotal))
 
-        for value in wrapped_name: 
-            lines.append((value, bold, "left")) 
+    header_h = 43
+    row_h = 30
+    for name_lines, generic_lines, *_ in table_rows:
+        row_h += max(len(name_lines), len(generic_lines), 1) * 9
 
-        generic_text = f"Generic: {generic}" 
-        wrapped_generic = ( 
-            textwrap.wrap(generic_text, width=38) 
-            or [generic_text] 
-        ) 
+    verification_lines = [
+        "This is an order request only.",
+        "The medicine will NOT be released until a pharmacist",
+        "verifies the request.",
+        "Inventory is NOT automatically deducted when this",
+        "request is submitted.",
+    ]
 
-        for value in wrapped_generic: 
-            lines.append((value, small, "left")) 
+    height = (
+        12 + 43 + 8 + 29 + 22 + 15 + 26 + 12
+        + header_h + row_h
+        + 42 + 30
+        + 18 + 92
+        + 30
+    )
+    height = max(height, 430)
 
-        lines.append(( 
-            f"Qty: {quantity}    ₱{price:,.2f}    ₱{subtotal:,.2f}", 
-            regular, 
-            "left" 
-        )) 
-        lines.append(("", regular, "left")) 
+    image = Image.new("1", (width, height), 1)
+    draw = ImageDraw.Draw(image)
+    y = 10
 
-    lines.append(("-" * 46, small, "center")) 
-    lines.append((f"TOTAL: ₱{total:,.2f}", title_font, "center")) 
-    lines.append(("", regular, "left")) 
-    lines.append(("PHARMACIST VERIFICATION REQUIRED", bold, "center")) 
-    lines.append(("This is an order request only.", small, "center")) 
-    lines.append(("Medicine will NOT be released until", small, "center")) 
-    lines.append(("a pharmacist verifies the request.", small, "center")) 
-    lines.append(("Inventory is NOT automatically deducted.", small, "center")) 
-    lines.append(("", regular, "left")) 
-    lines.append(("Thank you for choosing Tinay's Pharmacy!", small, "center")) 
-    lines.append(("", regular, "left")) 
+    # Logo: monochrome equivalent of the pink circular pharmacy logo.
+    logo_d = 43
+    logo_x = (width - logo_d) // 2
+    draw.ellipse((logo_x, y, logo_x + logo_d, y + logo_d), fill=0)
+    # Simple white capsule inside the circle.
+    cx = width // 2
+    cy = y + logo_d // 2
+    pill_w, pill_h = 25, 11
+    draw.rounded_rectangle(
+        (cx - pill_w // 2, cy - pill_h // 2,
+         cx + pill_w // 2, cy + pill_h // 2),
+        radius=5,
+        fill=1,
+    )
+    draw.line(
+        (cx - 5, cy - 5, cx + 5, cy + 5),
+        fill=0,
+        width=2,
+    )
+    y += 51
 
-    line_heights = [] 
+    centered(draw, y, "TINAY'S PHARMACY", title_font)
+    y += 25
+    centered(draw, y, "From Pills to Wellness,", small)
+    y += 14
+    centered(draw, y, "Your Pharmacy Partner", small)
+    y += 22
 
-    for text, font, _ in lines: 
-        bbox = font.getbbox( 
-            text or "Ag" 
-        ) 
-        line_heights.append( 
-            max( 
-                20, 
-                bbox[3] - bbox[1] + 8 
-            ) 
-        ) 
+    # Dashed separator.
+    dash_y = y
+    for x in range(left, right, 12):
+        draw.line((x, dash_y, min(x + 7, right), dash_y), fill=0, width=2)
+    y += 14
 
-    height = max( 
-        180, 
-        sum(line_heights) + 20 
-    ) 
+    draw.text((left, y), "Request No:", fill=0, font=bold)
+    req_x = left + text_width("Request No:", bold) + 5
+    draw.text((req_x, y), request_number, fill=0, font=bold)
+    y += 17
 
-    image = Image.new( 
-        "1", 
-        (width, height), 
-        1 
-    ) 
+    draw.text((left, y), "Date:", fill=0, font=bold)
+    date_x = left + text_width("Date:", bold) + 5
+    draw.text((date_x, y), now, fill=0, font=small)
+    y += 28
 
-    draw = ImageDraw.Draw(image) 
-    y = 10 
+    draw.text((left, y), "MEDICINE REQUEST", fill=0, font=title_font)
+    y += 28
 
-    for (text, font, align), line_h in zip( 
-        lines, 
-        line_heights 
-    ): 
+    # Table matching the five columns in the screen reference.
+    x0 = left
+    table_w = right - left
+    col_w = [91, 103, 42, 61, 51]
+    col_x = [x0]
+    for w in col_w[:-1]:
+        col_x.append(col_x[-1] + w)
 
-        if text: 
-            bbox = draw.textbbox( 
-                (0, 0), 
-                text, 
-                font=font 
-            ) 
+    table_top = y
+    table_bottom = y + header_h + row_h
 
-            text_width = ( 
-                bbox[2] - bbox[0] 
-            ) 
+    # Header shading becomes a light thermal-gray equivalent.
+    draw.rectangle(
+        (x0, table_top, right, table_top + header_h),
+        fill=0,
+    )
+    headers = ["Medicine", "Generic", "Qty", "Price", "Total"]
+    aligns = ["left", "left", "center", "left", "left"]
+    for i, (label, align) in enumerate(zip(headers, aligns)):
+        if align == "center":
+            tw = text_width(label, header_font)
+            tx = col_x[i] + (col_w[i] - tw) // 2
+        else:
+            tx = col_x[i] + 4
+        draw.text((tx, table_top + 7), label, fill=1, font=header_font)
 
-            if align == "center": 
-                x = ( 
-                    width - text_width 
-                ) // 2 
-            else: 
-                x = margin 
+    row_y = table_top + header_h
+    for name_lines, generic_lines, quantity, price, subtotal in table_rows:
+        this_h = max(
+            30,
+            max(len(name_lines), len(generic_lines)) * 12 + 12,
+        )
 
-            draw.text( 
-                (x, y), 
-                text, 
-                fill=0, 
-                font=font 
-            ) 
+        draw.line(
+            (x0, row_y + this_h, right, row_y + this_h),
+            fill=0,
+            width=1,
+        )
 
-        y += line_h 
+        # Medicine
+        yy = row_y + 8
+        for line in name_lines[:3]:
+            draw.text((col_x[0] + 4, yy), line, fill=0, font=table_font)
+            yy += 11
 
-    # The MXW01 uses 384px-wide 1-bit rows. 
-    # Black pixels are represented by bit 1. 
-    pixels = image.load() 
-    row_bytes = width // 8 
-    rows = [] 
+        # Generic
+        yy = row_y + 8
+        for line in generic_lines[:3]:
+            draw.text((col_x[1] + 4, yy), line, fill=0, font=table_font)
+            yy += 11
 
-    for y in range(image.height): 
-        row = bytearray(row_bytes) 
+        # Qty
+        qty_text = str(quantity)
+        qx = col_x[2] + (col_w[2] - text_width(qty_text, table_font)) // 2
+        draw.text((qx, row_y + 8), qty_text, fill=0, font=table_font)
 
-        for x in range(width): 
-            if pixels[x, y] == 0: 
-                row[x // 8] |= ( 
-                    1 << (x % 8) 
-                ) 
+        # Price / Total
+        draw.text(
+            (col_x[3] + 3, row_y + 8),
+            f"₱{price:,.2f}",
+            fill=0,
+            font=table_font,
+        )
+        draw.text(
+            (col_x[4] + 3, row_y + 8),
+            f"₱{subtotal:,.2f}",
+            fill=0,
+            font=table_font,
+        )
 
-        rows.append(bytes(row)) 
+        row_y += this_h
 
-    # Some MXW01 firmware expects at least about 90 lines of image data. 
-    # Pad with blank rows if the slip is shorter. 
-    if image.height < MXW01_MIN_PRINT_LINES: 
-        rows.extend( 
-            [ 
-                b"\x00" * row_bytes 
-                for _ in range( 
-                    MXW01_MIN_PRINT_LINES - image.height 
-                ) 
-            ] 
-        ) 
-        line_count = MXW01_MIN_PRINT_LINES 
-    else: 
-        line_count = image.height 
+    y = row_y + 18
 
-    return line_count, b"".join(rows) 
+    total_text = f"TOTAL: ₱{total:,.2f}"
+    centered(draw, y, total_text, total_font)
+    y += 34
 
+    # Verification box: same wording and hierarchy as the reference.
+    box_top = y + 3
+    box_left = left
+    box_right = right
+    box_bottom = box_top + 105
+
+    # Thermal equivalent of the yellow/pink UI box.
+    draw.rounded_rectangle(
+        (box_left, box_top, box_right, box_bottom),
+        radius=9,
+        outline=0,
+        width=3,
+    )
+
+    verification_title = "PHARMACIST VERIFICATION"
+    centered(draw, box_top + 12, verification_title, bold)
+    verification_title2 = "REQUIRED"
+    centered(draw, box_top + 28, verification_title2, bold)
+
+    yy = box_top + 49
+    for line in verification_lines:
+        centered(draw, yy, line, small)
+        yy += 13
+
+    y = box_bottom + 20
+    centered(draw, y, "Thank you for choosing Tinay's Pharmacy!", small)
+
+    # Convert to the MXW01's 384px-wide 1-bit row format.
+    pixels = image.load()
+    row_bytes = width // 8
+    rows = []
+
+    for py in range(image.height):
+        row = bytearray(row_bytes)
+        for px in range(width):
+            if pixels[px, py] == 0:
+                row[px // 8] |= 1 << (px % 8)
+        rows.append(bytes(row))
+
+    if image.height < MXW01_MIN_PRINT_LINES:
+        rows.extend(
+            [b"\x00" * row_bytes
+             for _ in range(MXW01_MIN_PRINT_LINES - image.height)]
+        )
+        line_count = MXW01_MIN_PRINT_LINES
+    else:
+        line_count = image.height
+
+    return line_count, b"".join(rows)
+
+
+def _mxw01_parse_status(packet):
+    """Parse the A1 status response from an MXW01 printer."""
+    packet = bytes(packet)
+
+    if len(packet) < 8 or packet[:2] != b"\x22\x21":
+        return {
+            "ok": False,
+            "message": "Invalid MXW01 status packet."
+        }
+
+    payload_length = int.from_bytes(
+        packet[4:6],
+        "little"
+    )
+    payload = packet[6:6 + payload_length]
+
+    if len(payload) < 13:
+        return {
+            "ok": True,
+            "message": "MXW01 connected, but its status payload is shorter than expected.",
+            "battery": None,
+            "temperature": None,
+            "status_flag": None,
+            "error_code": None,
+        }
+
+    battery = payload[9]
+    temperature = payload[10]
+    status_flag = payload[12]
+    error_code = payload[13] if len(payload) > 13 else 0
+
+    error_names = {
+        1: "No paper",
+        9: "No paper",
+        4: "Overheated",
+        8: "Low battery",
+    }
+
+    if status_flag != 0:
+        message = error_names.get(
+            error_code,
+            f"Printer reported error code {error_code}."
+        )
+        return {
+            "ok": False,
+            "message": message,
+            "battery": battery,
+            "temperature": temperature,
+            "status_flag": status_flag,
+            "error_code": error_code,
+        }
+
+    return {
+        "ok": True,
+        "message": "Ready",
+        "battery": battery,
+        "temperature": temperature,
+        "status_flag": status_flag,
+        "error_code": error_code,
+    }
 
 def _mxw01_print_async(cart):
     """Send one reference slip directly to MXW01 over BLE.
@@ -2660,6 +3075,235 @@ def print_mxw01_reference_slip(cart):
     except Exception as exc:
         return False, f"MXW01 print failed: {exc}"
 
+def print_mxw01_web_bluetooth_html(cart):
+    """Render a browser button that prints directly to MXW01 via Web Bluetooth."""
+    line_count, image_data = _mxw01_slip_image(cart)
+    image_b64 = base64.b64encode(image_data).decode("ascii")
+
+    template = r"""
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+html, body { margin:0; padding:0; background:transparent; font-family:Arial,sans-serif; }
+#mxw01-print {
+    width:100%; height:48px; border:0; border-radius:9px;
+    background:#ed1760; color:#fff; font-size:15px; font-weight:800;
+    cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.12);
+}
+#mxw01-print:hover { background:#d9075d; }
+#mxw01-print:disabled { opacity:.65; cursor:wait; }
+#mxw01-status { margin-top:6px; text-align:center; font-size:12px; color:#666; min-height:16px; }
+</style>
+</head>
+<body>
+<button id="mxw01-print">🖨️ Print Reference Slip</button>
+<div id="mxw01-status"></div>
+<script>
+(function() {
+    const SERVICE = __SERVICE__;
+    const CONTROL = __CONTROL__;
+    const NOTIFY = __NOTIFY__;
+    const DATA = __DATA__;
+    const INTENSITY = __INTENSITY__;
+    const CHUNK = __CHUNK__;
+    const LINE_COUNT = __LINE_COUNT__;
+    const IMAGE_B64 = __IMAGE_B64__;
+
+    const button = document.getElementById('mxw01-print');
+    const status = document.getElementById('mxw01-status');
+
+    function setStatus(message, error=false) {
+        status.textContent = message;
+        status.style.color = error ? '#c62828' : '#666';
+    }
+
+    function crc8(bytes) {
+        let crc = 0;
+        for (const value of bytes) {
+            crc ^= value;
+            for (let i=0; i<8; i++) {
+                if (crc & 0x80) crc = ((crc << 1) ^ 0x07) & 0xFF;
+                else crc = (crc << 1) & 0xFF;
+            }
+        }
+        return crc;
+    }
+
+    function command(commandId, payload) {
+        const out = new Uint8Array(8 + payload.length);
+        out[0] = 0x22; out[1] = 0x21;
+        out[2] = commandId; out[3] = 0x00;
+        out[4] = payload.length & 0xFF;
+        out[5] = (payload.length >> 8) & 0xFF;
+        out.set(payload, 6);
+        out[6 + payload.length] = crc8(payload);
+        out[7 + payload.length] = 0xFF;
+        return out;
+    }
+
+    function fromBase64(value) {
+        const raw = atob(value);
+        const out = new Uint8Array(raw.length);
+        for (let i=0; i<raw.length; i++) out[i] = raw.charCodeAt(i);
+        return out;
+    }
+
+    function packetCommand(data) {
+        return data && data.length >= 3 && data[0] === 0x22 && data[1] === 0x21
+            ? data[2] : null;
+    }
+
+    async function findPrinter() {
+        if (!navigator.bluetooth) {
+            throw new Error('Web Bluetooth is not supported by this browser. Use Chrome or Edge.');
+        }
+
+        // After the first permission grant, getDevices() reuses the
+        // previously authorized MXW01 without opening the device picker.
+        if (navigator.bluetooth.getDevices) {
+            const granted = await navigator.bluetooth.getDevices();
+            const existing = granted.find(d =>
+                (d.name || '').toLowerCase() === 'mxw01' ||
+                (d.name || '').toLowerCase().startsWith('mxw01')
+            );
+            if (existing) return existing;
+        }
+
+        // First use only: some MXW01 firmware does not advertise its
+        // local name/service UUID in the advertisement packet. Using a
+        // namePrefix/service filter can therefore make Chrome report
+        // "No compatible devices found" even though MXW01 is nearby.
+        // Accept the BLE device picker and use the MXW01 GATT service as
+        // the actual compatibility check after the device is selected.
+        return await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: [SERVICE]
+        });
+    }
+
+    async function getCharacteristics(device) {
+        if (!device.gatt) throw new Error('MXW01 does not expose a GATT connection.');
+        const server = device.gatt.connected ? device.gatt : await device.gatt.connect();
+        const service = await server.getPrimaryService(SERVICE);
+        const control = await service.getCharacteristic(CONTROL);
+        const notify = await service.getCharacteristic(NOTIFY);
+        const data = await service.getCharacteristic(DATA);
+        return { server, control, notify, data };
+    }
+
+    async function printToPrinter() {
+        const device = await findPrinter();
+        setStatus('Connecting to MXW01...');
+        const { control, notify, data } = await getCharacteristics(device);
+
+        let a9Resolve, a9Reject, completeResolve;
+        const a9Promise = new Promise((resolve, reject) => { a9Resolve=resolve; a9Reject=reject; });
+        const completePromise = new Promise(resolve => { completeResolve=resolve; });
+
+        const onNotify = event => {
+            const packet = new Uint8Array(event.target.value.buffer);
+            const cmd = packetCommand(packet);
+            if (cmd === 0xA9) {
+                const len = packet.length >= 6 ? (packet[4] | (packet[5] << 8)) : 0;
+                const payload = packet.slice(6, 6 + len);
+                if (payload.length && payload[0] !== 0x00) {
+                    a9Reject(new Error('MXW01 rejected the print request (status ' + payload[0].toString(16).padStart(2,'0') + ').'));
+                } else {
+                    a9Resolve();
+                }
+            } else if (cmd === 0xAA) {
+                completeResolve();
+            }
+        };
+
+        await notify.startNotifications();
+        notify.addEventListener('characteristicvaluechanged', onNotify);
+
+        try {
+            setStatus('Preparing printer...');
+            await control.writeValueWithoutResponse(command(0xA1, new Uint8Array([0x00])));
+            await new Promise(r => setTimeout(r, 250));
+            await control.writeValueWithoutResponse(command(0xA2, new Uint8Array([INTENSITY])));
+            await control.writeValueWithoutResponse(command(0xA9, new Uint8Array([
+                LINE_COUNT & 0xFF, (LINE_COUNT >> 8) & 0xFF, 0x30, 0x00
+            ])));
+
+            await Promise.race([
+                a9Promise,
+                new Promise((_, reject) => setTimeout(() => reject(new Error('MXW01 did not acknowledge the print request.')), 7000))
+            ]);
+
+            const image = fromBase64(IMAGE_B64);
+            setStatus('Sending reference slip to MXW01...');
+
+            for (let offset=0; offset<image.length; offset += CHUNK) {
+                const part = image.slice(offset, Math.min(offset + CHUNK, image.length));
+                await data.writeValueWithoutResponse(part);
+                await new Promise(r => setTimeout(r, 35));
+            }
+
+            setStatus('Printing reference slip...');
+            await control.writeValueWithoutResponse(command(0xAD, new Uint8Array([0x00])));
+
+            await Promise.race([
+                completePromise,
+                new Promise(resolve => setTimeout(resolve, 8000))
+            ]);
+
+            setStatus('✅ Reference slip printed on MXW01.');
+        } finally {
+            notify.removeEventListener('characteristicvaluechanged', onNotify);
+            try { await notify.stopNotifications(); } catch(e) {}
+            try { if (device.gatt && device.gatt.connected) device.gatt.disconnect(); } catch(e) {}
+        }
+    }
+
+    button.addEventListener('click', async function() {
+        button.disabled = true;
+        setStatus('Starting MXW01 printing...');
+        try {
+            await printToPrinter();
+        } catch (error) {
+            console.error(error);
+            setStatus('❌ ' + (error && error.message ? error.message : error), true);
+        } finally {
+            button.disabled = false;
+        }
+    });
+})();
+</script>
+</body>
+</html>
+"""
+
+    # Use the same MXW01 UUID constants as the native Windows BLE printer.
+    # These names must be defined in Python before the HTML template is
+    # rendered; otherwise Streamlit Cloud raises NameError while building
+    # the browser-print component.
+    service_uuid = MXW01_SERVICE_UUID
+    control_uuid = MXW01_CONTROL_UUID
+    notify_uuid = MXW01_NOTIFY_UUID
+    data_uuid = MXW01_DATA_UUID
+    intensity = MXW01_INTENSITY
+    chunk_size = MXW01_CHUNK_SIZE
+
+    replacements = {
+        "__SERVICE__": json.dumps(service_uuid),
+        "__CONTROL__": json.dumps(control_uuid),
+        "__NOTIFY__": json.dumps(notify_uuid),
+        "__DATA__": json.dumps(data_uuid),
+        "__INTENSITY__": str(intensity),
+        "__CHUNK__": str(chunk_size),
+        "__LINE_COUNT__": str(line_count),
+        "__IMAGE_B64__": json.dumps(image_b64),
+    }
+    for key, value in replacements.items():
+        template = template.replace(key, value)
+    return template
+
+
 def print_reference_slip_html(cart): 
     """Browser fallback when direct MXW01 printing is unavailable.""" 
     slip_html = build_reference_slip_html(cart) 
@@ -2944,48 +3588,21 @@ def reference_slip_popup():
 
     if is_streamlit_cloud() or os.name != "nt":
         # --------------------------------------------------
-        # STREAMLIT CLOUD / NON-WINDOWS BROWSER PRINT
+        # STREAMLIT CLOUD / WEB BLUETOOTH MXW01 PRINT
         # --------------------------------------------------
-        st.info(
-            "☁️ Streamlit Cloud detected. Your Bluetooth printer is "
-            "accessed through this device, so the browser print dialog "
-            "will be used."
+        # The Streamlit server cannot access the customer's Bluetooth
+        # adapter. Web Bluetooth moves the BLE connection into the browser,
+        # so the printer is reached directly from the customer's device.
+        # The first use requires the browser's one-time Bluetooth permission.
+        # After permission is granted, later clicks use getDevices() and do
+        # not show a printer picker or a print dialog.
+        components.html(
+            print_mxw01_web_bluetooth_html(
+                reference_slip_cart
+            ),
+            height=78,
+            scrolling=False
         )
-
-        if st.button(
-            "🖨️ Print Reference Slip",
-            key="browser_print_reference_slip",
-            use_container_width=True,
-            type="primary"
-        ):
-            # Render the slip in a browser component. The HTML
-            # automatically calls window.print() as soon as it loads.
-            components.html(
-                print_reference_slip_html(
-                    reference_slip_cart
-                ),
-                height=1,
-                scrolling=False
-            )
-
-            st.session_state.reference_slip_printed = True
-            st.session_state.reference_slip_browser_print_started = True
-
-            # The order request has already been saved. Clear the cart
-            # after starting browser printing so the customer does not
-            # accidentally submit the same order again.
-            st.session_state.order_cart = []
-            st.session_state.order_medicine_name = None
-            st.session_state.pending_purchase_medicine = None
-            st.session_state.show_slip = False
-            st.session_state.reference_slip_cart = []
-
-            st.success(
-                "🖨️ Print dialog opened automatically. Choose your MXW01 printer and confirm printing."
-            )
-
-            # Do not immediately rerun here. The browser component needs
-            # to remain mounted long enough to execute window.print().
 
     else:
         # --------------------------------------------------
@@ -3482,48 +4099,78 @@ def render_order_panel():
     # SEND ORDER 
     # ------------------------------------------------------ 
 
-    if cart: 
+    if cart:
 
-        if st.button( 
-            "🖨️ Print Reference Slip & Send Order", 
-            key="print_and_send_order", 
-            use_container_width=True, 
-            type="primary" 
-        ): 
+        if st.button(
+            "🖨️ Print Reference Slip & Send Order",
+            key="print_and_send_order",
+            use_container_width=True,
+            type="primary"
+        ):
 
-            # -------------------------------------------------- 
-            # SAVE ORDER 
-            # -------------------------------------------------- 
+            # --------------------------------------------------
+            # SAVE ORDER FIRST
+            # --------------------------------------------------
 
-            request_number = ( 
-                save_order_request( 
-                    cart 
-                ) 
-            ) 
+            request_number = save_order_request(cart)
 
-            if request_number: 
+            if request_number:
 
-                # -------------------------------------------------- 
-                # CREATE RECEIPT SNAPSHOT 
-                # -------------------------------------------------- 
-
-                st.session_state.reference_slip_cart = [ 
-                    dict(item) 
-                    for item in cart 
-                ] 
-
-                # -------------------------------------------------- 
                 # --------------------------------------------------
-                # KEEP CART UNTIL PRINTING IS CONFIRMED
+                # CREATE REFERENCE-SLIP SNAPSHOT
                 # --------------------------------------------------
-                # The order remains visible in My Cart while the
-                # reference slip is being displayed and printed.
 
-                st.session_state.show_slip = True 
+                st.session_state.reference_slip_cart = [
+                    dict(item)
+                    for item in cart
+                ]
 
-                st.rerun() 
+                # --------------------------------------------------
+                # LOCAL WINDOWS: PRINT DIRECTLY TO MXW01
+                # --------------------------------------------------
+                # Do NOT open the browser print dialog here.
+                # The local Windows app talks to MXW01 through
+                # Bleak Bluetooth and prints immediately.
 
-        if st.button( 
+                if os.name == "nt" and not is_streamlit_cloud():
+                    with st.spinner("🖨️ Printing reference slip to MXW01..."):
+                        success, message = print_mxw01_reference_slip(
+                            st.session_state.reference_slip_cart
+                        )
+
+                    if success:
+                        print_key = f"mxw01_printed_{request_number}"
+                        st.session_state[print_key] = True
+                        st.session_state.reference_slip_printed = True
+
+                        # Clear only after the printer confirms completion.
+                        st.session_state.order_cart = []
+                        st.session_state.order_medicine_name = None
+                        st.session_state.pending_purchase_medicine = None
+                        st.session_state.show_slip = False
+                        st.session_state.reference_slip_cart = []
+
+                        st.success("🖨️ " + message)
+                        st.rerun()
+                    else:
+                        # Keep the order/cart so the customer can retry.
+                        st.error("🖨️ " + message)
+
+                        # Show the reference slip popup with the direct
+                        # MXW01 retry button.
+                        st.session_state.show_slip = True
+                        st.rerun()
+
+                else:
+                    # --------------------------------------------------
+                    # STREAMLIT CLOUD: BROWSER PRINT FALLBACK
+                    # --------------------------------------------------
+                    # Cloud cannot access the local Bluetooth adapter.
+                    # Keep the existing browser-print flow.
+                    st.session_state.show_slip = True
+                    st.rerun()
+
+        if st.button(
             "ⓧ Cancel Order", 
             key="clear_order", 
             use_container_width=True 
