@@ -2666,14 +2666,27 @@ def print_reference_slip_html(cart):
     return slip_html.replace( 
         "</body>", 
         """ 
-        <script> 
-        window.addEventListener('load', function () { 
-            setTimeout(function () { 
-                window.print(); 
-            }, 500); 
-        }); 
-        </script> 
-        </body> 
+        <script>
+        (function () {
+            function autoPrint() {
+                try {
+                    window.focus();
+                    window.print();
+                } catch (e) {
+                    console.error('Automatic printing failed:', e);
+                }
+            }
+
+            if (document.readyState === 'complete') {
+                setTimeout(autoPrint, 150);
+            } else {
+                window.addEventListener('load', function () {
+                    setTimeout(autoPrint, 150);
+                }, { once: true });
+            }
+        })();
+        </script>
+        </body>
         """ 
     ) 
 
@@ -2891,9 +2904,8 @@ def reference_slip_popup():
     # RECEIPT PREVIEW
     #
     # IMPORTANT:
-    # The receipt does NOT print automatically.
-    # Printing happens ONLY when the customer clicks
-    # the "Print Reference Slip" button inside the receipt.
+    # The receipt preview is shown first. Printing starts only when
+    # the customer clicks the "Print Reference Slip" button.
     # ------------------------------------------------------
     components.html(
         build_reference_slip_html(
@@ -2946,8 +2958,8 @@ def reference_slip_popup():
             use_container_width=True,
             type="primary"
         ):
-            # Render the slip in a small browser component. The HTML
-            # automatically calls window.print() after it loads.
+            # Render the slip in a browser component. The HTML
+            # automatically calls window.print() as soon as it loads.
             components.html(
                 print_reference_slip_html(
                     reference_slip_cart
@@ -2969,8 +2981,7 @@ def reference_slip_popup():
             st.session_state.reference_slip_cart = []
 
             st.success(
-                "🖨️ Print dialog opened. Select MXW01 and print the "
-                "reference slip."
+                "🖨️ Print dialog opened automatically. Choose your MXW01 printer and confirm printing."
             )
 
             # Do not immediately rerun here. The browser component needs
