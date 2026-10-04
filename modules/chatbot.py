@@ -2860,6 +2860,17 @@ html, body { margin:0; padding:0; background:transparent; font-family:Arial,sans
 </html>
 """
 
+    # Use the same MXW01 UUID constants as the native Windows BLE printer.
+    # These names must be defined in Python before the HTML template is
+    # rendered; otherwise Streamlit Cloud raises NameError while building
+    # the browser-print component.
+    service_uuid = MXW01_SERVICE_UUID
+    control_uuid = MXW01_CONTROL_UUID
+    notify_uuid = MXW01_NOTIFY_UUID
+    data_uuid = MXW01_DATA_UUID
+    intensity = MXW01_INTENSITY
+    chunk_size = MXW01_CHUNK_SIZE
+
     replacements = {
         "__SERVICE__": json.dumps(service_uuid),
         "__CONTROL__": json.dumps(control_uuid),
