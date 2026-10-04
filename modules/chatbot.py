@@ -1801,7 +1801,7 @@ def clear_cart_after_reference_slip():
 # ==========================================================
 
 def build_reference_slip_html(cart):
-    """Build the simple black-and-white reference slip for browser printing."""
+
     if not cart:
         return ""
 
@@ -1809,139 +1809,542 @@ def build_reference_slip_html(cart):
         st.session_state.get("request_number")
         or generate_request_number()
     )
-    now = datetime.now().strftime("%b %d, %Y %I:%M %p")
+
+    now = datetime.now().strftime(
+        "%b %d, %Y %I:%M %p"
+    )
+
     total = calculate_reference_slip_total(cart)
 
     medicine_blocks = ""
+
     for item in cart:
-        name = html.escape(str(item.get("name", "")))
-        generic = html.escape(str(item.get("generic_name", "N/A")))
-        quantity = int(item.get("quantity", 0) or 0)
+
+        name = html.escape(
+            str(item.get("name", ""))
+        )
+
+        generic = html.escape(
+            str(item.get("generic_name", "N/A"))
+        )
+
+        quantity = int(
+            item.get("quantity", 0) or 0
+        )
+
         try:
-            price = float(item.get("price", 0) or 0)
-        except (TypeError, ValueError):
+            price = float(
+                item.get("price", 0) or 0
+            )
+        except Exception:
             price = 0.0
+
         subtotal = price * quantity
 
         medicine_blocks += f"""
         <div class="medicine-item">
-            <div class="medicine-name">{name}</div>
-            <div class="generic">Generic: {generic}</div>
-            <div class="medicine-row">
-                <span>Qty {quantity}</span>
-                <span>₱{price:,.2f}</span>
-                <span>₱{subtotal:,.2f}</span>
+
+            <div class="medicine-name">
+                {name}
             </div>
+
+            <div class="generic">
+                Generic: {generic}
+            </div>
+
+            <div class="medicine-row">
+
+                <span>
+                    Qty {quantity}
+                </span>
+
+                <span>
+                    ₱{price:,.2f}
+                </span>
+
+                <span>
+                    ₱{subtotal:,.2f}
+                </span>
+
+            </div>
+
         </div>
         """
 
-    return f"""
+    reference_slip_html = f"""
     <!DOCTYPE html>
+
     <html>
+
     <head>
+
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
         <style>
-            * {{ box-sizing: border-box; }}
-            html, body {{
-                margin: 0; padding: 0; background: #fff; color: #111;
-                font-family: Arial, Helvetica, sans-serif;
+
+            * {{
+                box-sizing: border-box;
             }}
-            body {{ padding: 5px; }}
+
+            html,
+            body {{
+                margin: 0;
+                padding: 0;
+
+                background: #ffffff;
+
+                font-family:
+                    Arial,
+                    Helvetica,
+                    sans-serif;
+
+                color: #111111;
+            }}
+
+            body {{
+                padding: 5px;
+            }}
+
+            /* ==================================================
+               RECEIPT
+               ================================================== */
+
             .reference-slip {{
-                width: 80mm; max-width: 80mm; min-height: 125mm;
-                margin: 0 auto; padding: 7mm 5mm 6mm;
-                background: #fff; border: 1px solid #e8e8e8;
-                box-shadow: 0 5px 18px rgba(0,0,0,.10);
+
+                width: 80mm;
+                max-width: 80mm;
+
+                margin: 0 auto;
+
+                padding: 7mm 5mm 6mm;
+
+                background: #ffffff;
+
+                border: 1px solid #e5e5e5;
+
+                box-shadow:
+                    0 5px 15px
+                    rgba(0, 0, 0, 0.08);
+
             }}
-            .header {{ text-align: center; }}
+
+            /* ==================================================
+               HEADER
+               ================================================== */
+
+            .header {{
+
+                text-align: center;
+
+                margin-bottom: 13px;
+
+            }}
+
             .pharmacy-name {{
-                font-size: 19px; font-weight: 800; line-height: 1.15;
-                margin-bottom: 3px; color: #111;
+
+                font-size: 19px;
+
+                font-weight: 800;
+
+                line-height: 1.15;
+
+                margin-bottom: 3px;
+
             }}
+
             .request-title {{
-                font-size: 17px; font-weight: 900; line-height: 1.15;
-                color: #111;
+
+                font-size: 17px;
+
+                font-weight: 900;
+
+                line-height: 1.15;
+
             }}
-            .separator {{ border-top: 1px dashed #777; margin: 13px 0 12px; }}
-            .info {{ font-size: 10.5px; line-height: 1.6; color: #111; }}
-            .info-row {{ display: flex; align-items: flex-start; gap: 4px; }}
-            .info-label {{ white-space: nowrap; }}
-            .info-value {{ overflow-wrap: anywhere; }}
-            .medicine-item {{ padding: 8px 0 10px; border-bottom: 1px dashed #777; }}
-            .medicine-name {{ font-size: 15px; font-weight: 800; line-height: 1.25; margin-bottom: 2px; }}
-            .generic {{ font-size: 10.5px; color: #444; margin-bottom: 6px; line-height: 1.35; }}
+
+            /* ==================================================
+               DASHED LINE
+               ================================================== */
+
+            .separator {{
+
+                border-top:
+                    1px dashed #777777;
+
+                margin:
+                    12px 0;
+
+            }}
+
+            /* ==================================================
+               REQUEST INFORMATION
+               ================================================== */
+
+            .info {{
+
+                font-size: 10.5px;
+
+                line-height: 1.6;
+
+            }}
+
+            .info-row {{
+
+                display: flex;
+
+                gap: 4px;
+
+            }}
+
+            .info-label {{
+
+                font-weight: 700;
+
+                white-space: nowrap;
+
+            }}
+
+            /* ==================================================
+               MEDICINE
+               ================================================== */
+
+            .medicine-item {{
+
+                padding:
+                    8px 0 10px;
+
+                border-bottom:
+                    1px dashed #777777;
+
+            }}
+
+            .medicine-name {{
+
+                font-size: 15px;
+
+                font-weight: 800;
+
+                line-height: 1.25;
+
+                margin-bottom: 2px;
+
+            }}
+
+            .generic {{
+
+                font-size: 10.5px;
+
+                color: #555555;
+
+                margin-bottom: 6px;
+
+            }}
+
             .medicine-row {{
-                display: grid; grid-template-columns: 1fr 1fr 1fr;
-                column-gap: 4px; font-size: 10.5px; line-height: 1.35;
+
+                display: grid;
+
+                grid-template-columns:
+                    1fr 1fr 1fr;
+
+                font-size: 10.5px;
+
             }}
-            .medicine-row span:nth-child(1) {{ text-align: left; }}
-            .medicine-row span:nth-child(2) {{ text-align: center; }}
-            .medicine-row span:nth-child(3) {{ text-align: right; }}
+
+            .medicine-row span:nth-child(1) {{
+
+                text-align: left;
+
+            }}
+
+            .medicine-row span:nth-child(2) {{
+
+                text-align: center;
+
+            }}
+
+            .medicine-row span:nth-child(3) {{
+
+                text-align: right;
+
+            }}
+
+            /* ==================================================
+               TOTAL
+               ================================================== */
+
             .total {{
-                text-align: center; font-size: 19px; font-weight: 900;
-                line-height: 1.2; margin: 16px 0 17px; white-space: nowrap;
+
+                text-align: center;
+
+                font-size: 19px;
+
+                font-weight: 900;
+
+                margin:
+                    16px 0 17px;
+
+                line-height: 1.2;
+
             }}
-            .verification {{ text-align: center; padding: 0 2px; }}
+
+            /* ==================================================
+               PHARMACIST VERIFICATION
+               ================================================== */
+
+            .verification {{
+
+                text-align: center;
+
+                padding: 0 3px;
+
+            }}
+
             .verification-title {{
-                font-size: 13px; font-weight: 900; line-height: 1.25;
+
+                font-size: 13px;
+
+                font-weight: 900;
+
+                line-height: 1.25;
+
                 margin-bottom: 8px;
+
             }}
+
             .verification p {{
-                font-size: 9.5px; line-height: 1.45; margin: 5px 0; color: #555;
+
+                font-size: 9.5px;
+
+                line-height: 1.45;
+
+                margin:
+                    5px 0;
+
+                color: #555555;
+
             }}
-            .verification b {{ color: #222; }}
+
+            .verification b {{
+
+                color: #222222;
+
+            }}
+
+            /* ==================================================
+               FOOTER
+               ================================================== */
+
             .footer {{
-                text-align: center; font-size: 9.5px; color: #777;
-                margin-top: 20px; line-height: 1.4;
+
+                text-align: center;
+
+                font-size: 9.5px;
+
+                color: #777777;
+
+                margin-top: 20px;
+
+                line-height: 1.4;
+
             }}
+
+            /* ==================================================
+               PRINT
+               ================================================== */
+
             @media print {{
-                @page {{ size: 80mm auto; margin: 0; }}
-                html, body {{ width: 80mm; margin: 0; padding: 0; background: #fff; }}
-                .reference-slip {{
-                    width: 80mm; max-width: 80mm; min-height: 0;
-                    margin: 0; padding: 5mm 4mm 5mm;
-                    border: none; box-shadow: none;
+
+                @page {{
+
+                    size: 80mm auto;
+
+                    margin: 0;
+
                 }}
+
+                html,
+                body {{
+
+                    width: 80mm;
+
+                    margin: 0;
+
+                    padding: 0;
+
+                    background: #ffffff;
+
+                }}
+
+                .reference-slip {{
+
+                    width: 80mm;
+
+                    max-width: 80mm;
+
+                    margin: 0;
+
+                    padding:
+                        5mm 4mm 5mm;
+
+                    border: none;
+
+                    box-shadow: none;
+
+                }}
+
             }}
+
         </style>
+
     </head>
+
+
     <body>
+
         <div class="reference-slip">
+
+
+            <!-- HEADER -->
+
             <div class="header">
-                <div class="pharmacy-name">Tinay's Pharmacy</div>
-                <div class="request-title">MEDICINE REQUEST</div>
+
+                <div class="pharmacy-name">
+                    Tinay's Pharmacy
+                </div>
+
+                <div class="request-title">
+                    MEDICINE REQUEST
+                </div>
+
             </div>
 
+
+            <!-- REQUEST DETAILS -->
+
             <div class="separator"></div>
+
             <div class="info">
+
                 <div class="info-row">
-                    <span class="info-label">Request No:</span>
-                    <span class="info-value">{html.escape(str(request_number))}</span>
+
+                    <span class="info-label">
+                        Request No:
+                    </span>
+
+                    <span>
+                        {html.escape(request_number)}
+                    </span>
+
                 </div>
+
                 <div class="info-row">
-                    <span class="info-label">Date:</span>
-                    <span class="info-value">{html.escape(now)}</span>
+
+                    <span class="info-label">
+                        Date:
+                    </span>
+
+                    <span>
+                        {html.escape(now)}
+                    </span>
+
                 </div>
+
             </div>
 
+
+            <!-- MEDICINE -->
+
             <div class="separator"></div>
+
             {medicine_blocks}
 
-            <div class="total">TOTAL: ₱{total:,.2f}</div>
 
-            <div class="verification">
-                <div class="verification-title">PHARMACIST VERIFICATION<br>REQUIRED</div>
-                <p>This is an order request only.</p>
-                <p>The medicine will <b>NOT</b> be released until a pharmacist verifies the request.</p>
-                <p>Inventory is <b>NOT</b> automatically deducted when this request is submitted.</p>
+            <!-- TOTAL -->
+
+            <div class="total">
+
+                TOTAL: ₱{total:,.2f}
+
             </div>
 
-            <div class="footer">Thank you for choosing Tinay's Pharmacy!</div>
+
+            <!-- VERIFICATION -->
+
+            <div class="verification">
+
+                <div class="verification-title">
+
+                    PHARMACIST VERIFICATION<br>
+                    REQUIRED
+
+                </div>
+
+                <p>
+                    This is an order request only.
+                </p>
+
+                <p>
+                    The medicine will <b>NOT</b> be
+                    released until a pharmacist
+                    verifies the request.
+                </p>
+
+                <p>
+                    Inventory is <b>NOT</b> automatically
+                    deducted when this request
+                    is submitted.
+                </p>
+
+            </div>
+
+
+            <!-- FOOTER -->
+
+            <div class="footer">
+
+                Thank you for choosing Tinay's Pharmacy!
+
+            </div>
+
+
         </div>
+
     </body>
+
     </html>
     """
+
+    return reference_slip_html
+
+# ========================================================== 
+# MXW01 DIRECT BLE PRINTING 
+# ========================================================== 
+
+# The MXW01 is a BLE thermal printer. The Streamlit server performs 
+# the Bluetooth connection, so a PC browser OR a phone/tablet browser 
+# can trigger the printer when this Streamlit app is running on the 
+# Windows PC that has Bluetooth access to the MXW01. 
+# 
+# IMPORTANT: 
+# Disconnect/close Fun Print on the phone before using direct PC BLE 
+# printing. The phone's Fun Print connection and the PC's direct BLE 
+# connection should not be competing for the same printer. 
+MXW01_ADDRESS = "48:0F:57:4D:57:89" 
+MXW01_NAME = "MXW01" 
+MXW01_AUTO_PRINT = False 
+MXW01_PRINT_WIDTH = 384 
+MXW01_INTENSITY = 0x5D 
+MXW01_CHUNK_SIZE = 180 
+MXW01_SCAN_TIMEOUT = 10.0 
+MXW01_MIN_PRINT_LINES = 90 
+
+
+MXW01_CONTROL_UUID = "0000ae01-0000-1000-8000-00805f9b34fb" 
+MXW01_NOTIFY_UUID = "0000ae02-0000-1000-8000-00805f9b34fb" 
+MXW01_DATA_UUID = "0000ae03-0000-1000-8000-00805f9b34fb" 
+MXW01_SERVICE_UUID = "0000ae30-0000-1000-8000-00805f9b34fb" 
+
 
 def _mxw01_crc8(data): 
     """CRC-8 used by the MXW01 control packets.""" 
@@ -2015,21 +2418,12 @@ async def _mxw01_find_device():
 
 
 def _mxw01_slip_image(cart):
-    """
-    Render the physical MXW01 reference slip in the same simple
-    black-and-white layout as the requested reference image.
-
-    This function is used by both local MXW01 printing and the
-    Streamlit Cloud Web Bluetooth printing path.
-    """
+    """Render the MXW01 print to match the reference printed slip layout."""
     from PIL import Image, ImageDraw, ImageFont
 
     width = MXW01_PRINT_WIDTH
-
-    # Keep a small, even receipt margin.
-    left = 16
-    right = width - 16
-    content_width = right - left
+    left = 24
+    right = width - 24
 
     font_candidates = [
         r"C:\Windows\Fonts\arial.ttf",
@@ -2049,21 +2443,19 @@ def _mxw01_slip_image(cart):
                     pass
         return ImageFont.load_default()
 
-    regular = load_font(font_candidates, 12)
-    small = load_font(font_candidates, 10)
+    regular = load_font(font_candidates, 13)
+    small = load_font(font_candidates, 11)
     bold = load_font(bold_candidates, 13)
-    header_font = load_font(bold_candidates, 19)
-    total_font = load_font(bold_candidates, 20)
-    verification_font = load_font(bold_candidates, 13)
+    pharmacy_font = load_font(bold_candidates, 19)
+    title_font = load_font(bold_candidates, 17)
+    medicine_font = load_font(bold_candidates, 15)
+    total_font = load_font(bold_candidates, 19)
 
     request_number = (
         st.session_state.get("request_number")
         or generate_request_number()
     )
-
-    now = datetime.now().strftime(
-        "%B %d, %Y %I:%M %p"
-    )
+    now = datetime.now().strftime("%b %d, %Y %I:%M %p")
 
     items = []
     total = 0.0
@@ -2080,206 +2472,107 @@ def _mxw01_slip_image(cart):
 
         subtotal = price * quantity
         total += subtotal
-
-        items.append(
-            (name, generic, quantity, price, subtotal)
-        )
-
-    # ----------------------------------------------------------
-    # Helpers
-    # ----------------------------------------------------------
+        items.append((name, generic, quantity, price, subtotal))
 
     dummy = Image.new("1", (width, 100), 1)
     measure = ImageDraw.Draw(dummy)
 
-    def text_width(value, font):
-        box = measure.textbbox(
-            (0, 0),
-            str(value),
-            font=font
-        )
+    def text_width(text, font):
+        box = measure.textbbox((0, 0), text, font=font)
         return box[2] - box[0]
 
-    def centered(draw, y, value, font):
-        value = str(value)
-        draw.text(
-            (
-                (width - text_width(value, font)) // 2,
-                y
-            ),
-            value,
-            fill=0,
-            font=font
-        )
-
-    def wrap(value, max_width, font):
-        words = str(value).split()
-
-        if not words:
-            return [""]
-
-        lines = []
-        current = ""
-
-        for word in words:
-            candidate = (
-                word
-                if not current
-                else current + " " + word
-            )
-
-            if text_width(candidate, font) <= max_width:
-                current = candidate
-            else:
-                if current:
-                    lines.append(current)
-
-                current = word
-
-        if current:
-            lines.append(current)
-
-        return lines or [""]
+    def centered(draw, y, text, font):
+        w = text_width(text, font)
+        draw.text(((width - w) // 2, y), text, fill=0, font=font)
 
     def dashed_line(draw, y):
-        dash = 7
-        gap = 5
-
-        x = left
-
-        while x < right:
-            x2 = min(x + dash, right)
-
+        for x in range(left, right, 12):
             draw.line(
-                (x, y, x2, y),
+                (x, y, min(x + 7, right), y),
                 fill=0,
                 width=1
             )
 
-            x += dash + gap
+    def wrap(text, max_width, font):
+        words = str(text).split()
+        if not words:
+            return [""]
+        result = []
+        current = ""
 
-    # ----------------------------------------------------------
-    # Prepare medicine lines
-    # ----------------------------------------------------------
+        for word in words:
+            candidate = word if not current else current + " " + word
+            if text_width(candidate, font) <= max_width:
+                current = candidate
+            else:
+                if current:
+                    result.append(current)
+                current = word
 
-    prepared_items = []
+        if current:
+            result.append(current)
+
+        return result or [""]
+
+    # Estimate height based on the exact reference-slip sections.
+    medicine_rows = []
 
     for name, generic, quantity, price, subtotal in items:
-        name_lines = wrap(
-            name,
-            content_width,
-            bold
+        name_lines = wrap(name, 220, medicine_font)
+        generic_lines = wrap(generic, 220, small)
+        row_h = max(
+            58,
+            20 + max(len(name_lines) * 17, len(generic_lines) * 13) + 25
         )
-
-        generic_lines = wrap(
-            "Generic: " + generic,
-            content_width,
-            small
-        )
-
-        prepared_items.append(
+        medicine_rows.append(
             (
                 name_lines,
                 generic_lines,
                 quantity,
                 price,
-                subtotal
+                subtotal,
+                row_h
             )
         )
-
-    # ----------------------------------------------------------
-    # Calculate required height
-    # ----------------------------------------------------------
-
-    verification_text = [
-        "This is an order request only.",
-        "The medicine will NOT be released until a",
-        "pharmacist verifies the request.",
-        "Inventory is NOT automatically deducted",
-        "when this request is submitted.",
-    ]
 
     height = 18
 
     # Header
-    height += 24
-    height += 25
+    height += 24 + 22
 
-    # Request details
-    height += 12
-    height += 17
-    height += 17
-    height += 12
+    # First separator + request information + second separator
+    height += 14 + 42 + 14
 
-    # Medicine title
-    height += 25
-    height += 12
+    # Medicine sections
+    for row in medicine_rows:
+        height += row[5]
 
-    # Medicine items
-    for name_lines, generic_lines, *_ in prepared_items:
-        height += 19
-        height += len(name_lines) * 16
-        height += len(generic_lines) * 13
-        height += 18
-        height += 12
+    # Total + verification + footer
+    height += 18 + 28
+    height += 24 + 88
+    height += 30
 
-    # Total
-    height += 34
+    height = max(height, 470)
 
-    # Verification
-    height += 20
-    height += 12
-    height += len(verification_text) * 15
-    height += 15
-
-    # Footer
-    height += 28
-
-    height = max(height, 420)
-
-    # ----------------------------------------------------------
-    # Create monochrome receipt image
-    # ----------------------------------------------------------
-
-    image = Image.new(
-        "1",
-        (width, height),
-        1
-    )
-
+    image = Image.new("1", (width, height), 1)
     draw = ImageDraw.Draw(image)
 
-    y = 12
+    y = 16
 
-    # ----------------------------------------------------------
+    # ------------------------------------------------------
     # HEADER
-    # ----------------------------------------------------------
+    # ------------------------------------------------------
+    centered(draw, y, "Tinay's Pharmacy", pharmacy_font)
+    y += 24
 
-    centered(
-        draw,
-        y,
-        "Tinay's Pharmacy",
-        header_font
-    )
+    centered(draw, y, "MEDICINE REQUEST", title_font)
+    y += 24
 
-    y += 25
-
-    centered(
-        draw,
-        y,
-        "MEDICINE REQUEST",
-        header_font
-    )
-
-    y += 27
-
-    dashed_line(draw, y)
-
-    y += 12
-
-    # ----------------------------------------------------------
+    # ------------------------------------------------------
     # REQUEST INFORMATION
-    # ----------------------------------------------------------
+    # ------------------------------------------------------
+    dashed_line(draw, y)
+    y += 14
 
     draw.text(
         (left, y),
@@ -2288,15 +2581,11 @@ def _mxw01_slip_image(cart):
         font=bold
     )
 
-    req_x = (
-        left
-        + text_width("Request No:", bold)
-        + 5
-    )
+    req_x = left + text_width("Request No:", bold) + 5
 
     draw.text(
         (req_x, y),
-        str(request_number),
+        request_number,
         fill=0,
         font=regular
     )
@@ -2310,11 +2599,7 @@ def _mxw01_slip_image(cart):
         font=bold
     )
 
-    date_x = (
-        left
-        + text_width("Date:", bold)
-        + 5
-    )
+    date_x = left + text_width("Date:", bold) + 5
 
     draw.text(
         (date_x, y),
@@ -2323,60 +2608,42 @@ def _mxw01_slip_image(cart):
         font=regular
     )
 
-    y += 24
+    y += 17
 
     dashed_line(draw, y)
+    y += 17
 
-    y += 13
-
-    # ----------------------------------------------------------
-    # MEDICINE REQUEST TITLE
-    # ----------------------------------------------------------
-
-    draw.text(
-        (left, y),
-        "MEDICINE REQUEST",
-        fill=0,
-        font=header_font
-    )
-
-    y += 27
-
-    # ----------------------------------------------------------
-    # MEDICINES
-    # ----------------------------------------------------------
-
+    # ------------------------------------------------------
+    # MEDICINE
+    # ------------------------------------------------------
     for (
         name_lines,
         generic_lines,
         quantity,
         price,
-        subtotal
-    ) in prepared_items:
+        subtotal,
+        row_h
+    ) in medicine_rows:
 
-        # Medicine name
-        for line in name_lines:
-            draw.text(
-                (left, y),
-                line,
-                fill=0,
-                font=bold
-            )
-            y += 16
+        draw.text(
+            (left, y),
+            name_lines[0],
+            fill=0,
+            font=medicine_font
+        )
 
-        # Generic
-        for line in generic_lines:
-            draw.text(
-                (left, y),
-                line,
-                fill=0,
-                font=small
-            )
-            y += 13
+        y += 19
 
-        y += 3
+        draw.text(
+            (left, y),
+            f"Generic: {generic_lines[0]}",
+            fill=0,
+            font=small
+        )
 
-        # Quantity / price / subtotal
+        y += 17
+
+        # Qty / price / subtotal columns.
         qty_text = f"Qty {quantity}"
         price_text = f"₱{price:,.2f}"
         subtotal_text = f"₱{subtotal:,.2f}"
@@ -2385,96 +2652,72 @@ def _mxw01_slip_image(cart):
             (left, y),
             qty_text,
             fill=0,
-            font=regular
+            font=small
         )
 
-        price_w = text_width(
+        centered(
+            draw,
+            y,
             price_text,
-            regular
+            small
         )
 
-        subtotal_w = text_width(
-            subtotal_text,
-            regular
-        )
+        subtotal_w = text_width(subtotal_text, small)
 
         draw.text(
-            (
-                width // 2 - price_w // 2,
-                y
-            ),
-            price_text,
-            fill=0,
-            font=regular
-        )
-
-        draw.text(
-            (
-                right - subtotal_w,
-                y
-            ),
+            (right - subtotal_w, y),
             subtotal_text,
             fill=0,
-            font=regular
+            font=small
         )
 
-        y += 18
+        y += 17
 
         dashed_line(draw, y)
+        y += 15
 
-        y += 13
-
-    # ----------------------------------------------------------
+    # ------------------------------------------------------
     # TOTAL
-    # ----------------------------------------------------------
-
+    # ------------------------------------------------------
     total_text = f"TOTAL: ₱{total:,.2f}"
+    centered(draw, y, total_text, total_font)
+    y += 31
 
-    centered(
-        draw,
-        y,
-        total_text,
-        total_font
-    )
-
-    y += 34
-
-    # ----------------------------------------------------------
+    # ------------------------------------------------------
     # PHARMACIST VERIFICATION
-    # ----------------------------------------------------------
-
+    # ------------------------------------------------------
     centered(
         draw,
         y,
         "PHARMACIST VERIFICATION",
-        verification_font
+        bold
     )
-
-    y += 17
+    y += 15
 
     centered(
         draw,
         y,
         "REQUIRED",
-        verification_font
+        bold
     )
+    y += 24
 
-    y += 21
+    verification_lines = [
+        "This is an order request only.",
+        "The medicine will NOT be released until a pharmacist",
+        "verifies the request.",
+        "Inventory is NOT automatically deducted when this",
+        "request is submitted.",
+    ]
 
-    for line in verification_text:
-        centered(
-            draw,
-            y,
-            line,
-            small
-        )
-        y += 15
+    for line in verification_lines:
+        centered(draw, y, line, small)
+        y += 13
 
-    # ----------------------------------------------------------
+    # ------------------------------------------------------
     # FOOTER
-    # ----------------------------------------------------------
-
-    y += 12
+    # ------------------------------------------------------
+    y += 14
 
     centered(
         draw,
@@ -2483,24 +2726,97 @@ def _mxw01_slip_image(cart):
         small
     )
 
-    # Trim unnecessary blank space at the bottom.
-    bottom = min(
-        height,
-        y + 20
+    # Crop unused white space while keeping a small bottom margin.
+    crop_bottom = min(image.height, y + 25)
+    image = image.crop((0, 0, width, crop_bottom))
+
+    # Convert to the MXW01's 384px-wide 1-bit row format.
+    pixels = image.load()
+    row_bytes = width // 8
+    rows = []
+
+    for py in range(image.height):
+        row = bytearray(row_bytes)
+
+        for px in range(width):
+            if pixels[px, py] == 0:
+                row[px // 8] |= 1 << (px % 8)
+
+        rows.append(bytes(row))
+
+    if image.height < MXW01_MIN_PRINT_LINES:
+        rows.extend(
+            [
+                b"\x00" * row_bytes
+                for _ in range(MXW01_MIN_PRINT_LINES - image.height)
+            ]
+        )
+        line_count = MXW01_MIN_PRINT_LINES
+    else:
+        line_count = image.height
+
+    return line_count, b"".join(rows)
+
+def _mxw01_parse_status(packet):
+    """Parse the A1 status response from an MXW01 printer."""
+    packet = bytes(packet)
+
+    if len(packet) < 8 or packet[:2] != b"\x22\x21":
+        return {
+            "ok": False,
+            "message": "Invalid MXW01 status packet."
+        }
+
+    payload_length = int.from_bytes(
+        packet[4:6],
+        "little"
     )
+    payload = packet[6:6 + payload_length]
 
-    image = image.crop(
-        (0, 0, width, bottom)
-    )
+    if len(payload) < 13:
+        return {
+            "ok": True,
+            "message": "MXW01 connected, but its status payload is shorter than expected.",
+            "battery": None,
+            "temperature": None,
+            "status_flag": None,
+            "error_code": None,
+        }
 
-    output = io.BytesIO()
+    battery = payload[9]
+    temperature = payload[10]
+    status_flag = payload[12]
+    error_code = payload[13] if len(payload) > 13 else 0
 
-    image.save(
-        output,
-        format="PNG"
-    )
+    error_names = {
+        1: "No paper",
+        9: "No paper",
+        4: "Overheated",
+        8: "Low battery",
+    }
 
-    return bottom, output.getvalue()
+    if status_flag != 0:
+        message = error_names.get(
+            error_code,
+            f"Printer reported error code {error_code}."
+        )
+        return {
+            "ok": False,
+            "message": message,
+            "battery": battery,
+            "temperature": temperature,
+            "status_flag": status_flag,
+            "error_code": error_code,
+        }
+
+    return {
+        "ok": True,
+        "message": "Ready",
+        "battery": battery,
+        "temperature": temperature,
+        "status_flag": status_flag,
+        "error_code": error_code,
+    }
 
 def _mxw01_print_async(cart):
     """Send one reference slip directly to MXW01 over BLE.
