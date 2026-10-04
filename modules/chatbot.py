@@ -4,7 +4,6 @@ import os
 import textwrap 
 import json 
 import asyncio
-import base64
 import requests 
 import streamlit.components.v1 as components 
 from datetime import datetime 
@@ -135,121 +134,6 @@ def get_gemini_client():
         ) 
     except Exception: 
         return None 
-
-
-# ==========================================================
-# GEMINI REST API FALLBACK
-# ==========================================================
-
-def get_gemini_api_key():
-    """Read the Gemini API key from Streamlit Cloud secrets or environment."""
-    api_key = None
-
-    try:
-        api_key = st.secrets.get("GEMINI_API_KEY")
-    except Exception:
-        api_key = None
-
-    if not api_key:
-        api_key = os.getenv("GEMINI_API_KEY")
-
-    if isinstance(api_key, str):
-        api_key = api_key.strip().strip('"').strip("'")
-
-    return api_key or None
-
-
-def ask_gemini_rest(system_prompt):
-    """Call Gemini directly over HTTPS for Streamlit Cloud reliability."""
-    api_key = get_gemini_api_key()
-
-    if not api_key:
-        raise RuntimeError(
-            "GEMINI_API_KEY is missing from Streamlit Secrets."
-        )
-
-    models_to_try = [
-        GEMINI_MODEL,
-        "gemini-3.8-flash",
-    ]
-
-    last_error = None
-
-    for model in models_to_try:
-        url = (
-            "https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{model}:generateContent"
-        )
-
-        payload = {
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [
-                        {"text": system_prompt}
-                    ],
-                }
-            ],
-            "generationConfig": {
-                "temperature": 0.2,
-            },
-        }
-
-        try:
-            response = requests.post(
-                url,
-                params={"key": api_key},
-                json=payload,
-                timeout=60,
-            )
-
-            if response.status_code == 200:
-                data = response.json()
-                candidates = data.get("candidates") or []
-
-                if candidates:
-                    parts = (
-                        candidates[0]
-                        .get("content", {})
-                        .get("parts", [])
-                    )
-                    text = "".join(
-                        str(part.get("text", ""))
-                        for part in parts
-                        if isinstance(part, dict)
-                    ).strip()
-
-                    if text:
-                        return text
-
-                raise RuntimeError(
-                    "Gemini returned an empty response."
-                )
-
-            try:
-                error_data = response.json()
-                error_message = (
-                    error_data.get("error", {})
-                    .get("message", response.text[:300])
-                )
-            except Exception:
-                error_message = response.text[:300]
-
-            last_error = RuntimeError(
-                f"Gemini API {response.status_code}: {error_message}"
-            )
-
-            # Try the next stable model for model/access errors.
-            continue
-
-        except requests.RequestException as exc:
-            last_error = exc
-            continue
-
-    if last_error:
-        raise last_error
-
-    raise RuntimeError("Gemini API request failed.")
 
 
 # ========================================================== 
@@ -1168,46 +1052,36 @@ CUSTOMER QUESTION
 
 """ 
 
-    try:
-        # Streamlit Cloud can use the HTTPS Gemini API directly even if the
-        # google-genai package is unavailable.
-        if client is None:
-            return ask_gemini_rest(system_prompt)
+    try: 
 
-        response = client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=system_prompt
-        )
+        response = client.models.generate_content( 
+            model=GEMINI_MODEL, 
+            contents=system_prompt 
+        ) 
 
-        if response and response.text:
-            return response.text.strip()
+        if response and response.text: 
+            return response.text.strip() 
 
-        raise RuntimeError("Gemini returned an empty response.")
+        return ( 
+            "Pasensya, wala nakahatag sang sabat ang Gemini. " 
+            "Palihog sulayi liwat." 
+        ) 
 
-    except Exception as gemini_error:
-        # Retry through the direct REST API. This also handles SDK/version
-        # mismatches and transient Gemini SDK errors on Streamlit Cloud.
-        try:
-            return ask_gemini_rest(system_prompt)
-        except Exception:
-            # Ollama only works when the app is running on the same machine
-            # as Ollama. It is normally unavailable on Streamlit Cloud.
-            try:
-                return ask_ollama(
-                    system_prompt,
-                    user_question
-                )
-            except Exception:
-                # Keep the customer-facing message friendly while preserving
-                # the actual failure in Streamlit logs for debugging.
-                print(
-                    "Gemini chatbot error:",
-                    repr(gemini_error)
-                )
-                return (
-                    "Pasensya, temporarily unavailable ang AI chatbot.\n\n"
-                    "Palihog sulayi liwat pagkatapos sang pila ka segundo."
-                )
+    except Exception: 
+
+        # Gemini 429 quota/rate-limit errors, 503 errors, network errors,
+        # missing configuration, and other API failures automatically use
+        # the local Ollama model. The customer never sees the Gemini error.
+        try: 
+            return ask_ollama(
+                system_prompt,
+                user_question
+            ) 
+        except Exception: 
+            return ( 
+                "Pasensya, temporarily unavailable ang AI chatbot.\n\n" 
+                "Palihog sulayi liwat pagkatapos sang pila ka segundo." 
+            ) 
 
 
 
@@ -2197,7 +2071,6 @@ MXW01_MIN_PRINT_LINES = 90
 MXW01_CONTROL_UUID = "0000ae01-0000-1000-8000-00805f9b34fb" 
 MXW01_NOTIFY_UUID = "0000ae02-0000-1000-8000-00805f9b34fb" 
 MXW01_DATA_UUID = "0000ae03-0000-1000-8000-00805f9b34fb" 
-MXW01_SERVICE_UUID = "0000ae30-0000-1000-8000-00805f9b34fb" 
 
 
 def _mxw01_crc8(data): 
@@ -2226,49 +2099,267 @@ def _mxw01_command(command_id, payload=b""):
     return bytes(packet) 
 
 
-async def _mxw01_find_device():
-    """Find MXW01 using Windows BLE discovery and return the BLEDevice."""
-    from bleak import BleakScanner
+async def _mxw01_find_device(): 
+    """Find the MXW01 as a BLEDevice before connecting. 
 
-    target_address = MXW01_ADDRESS.strip().lower()
-    target_name = MXW01_NAME.strip().lower()
+    Using a discovered BLEDevice is more reliable on Windows than 
+    passing the raw MAC address directly to BleakClient. 
+    """ 
+    from bleak import BleakScanner 
 
-    try:
-        devices = await BleakScanner.discover(
-            timeout=MXW01_SCAN_TIMEOUT
-        )
-    except Exception as exc:
-        raise RuntimeError(
-            f"Windows Bluetooth scan failed: {exc}"
-        ) from exc
+    target_address = MXW01_ADDRESS.lower() 
+    target_name = MXW01_NAME.lower() 
 
-    # Prefer the exact configured Bluetooth address.
-    for device in devices:
-        address = str(
-            getattr(device, "address", "") or ""
-        ).strip().lower()
-        if address == target_address:
-            return device
+    # First try the exact Bluetooth address. 
+    try: 
+        device = await BleakScanner.find_device_by_address( 
+            MXW01_ADDRESS, 
+            timeout=MXW01_SCAN_TIMEOUT, 
+        ) 
+        if device is not None: 
+            return device 
+    except Exception: 
+        pass 
 
-    # Fallback to the printer name.
-    for device in devices:
-        name = str(
-            getattr(device, "name", "") or ""
-        ).strip().lower()
-        if name == target_name or target_name in name:
-            return device
+    # Then scan and accept MXW01, MXW01-xxxx, or a device whose 
+    # discovered address matches the configured address. 
+    try: 
+        devices = await BleakScanner.discover( 
+            timeout=MXW01_SCAN_TIMEOUT 
+        ) 
+    except Exception as exc: 
+        raise RuntimeError( 
+            "Windows Bluetooth scan failed: " 
+            f"{exc}" 
+        ) from exc 
 
-    detected = [
-        (
-            getattr(device, "address", ""),
-            getattr(device, "name", "")
-        )
-        for device in devices
-    ]
-    raise RuntimeError(
-        "MXW01 was not found. "
-        f"Detected Bluetooth devices: {detected}"
-    )
+    matches = [] 
+
+    for device in devices: 
+        address = str( 
+            getattr(device, "address", "") or "" 
+        ).lower() 
+
+        name = str( 
+            getattr(device, "name", "") or "" 
+        ).strip() 
+
+        if ( 
+            address == target_address 
+            or target_name in name.lower() 
+        ): 
+            matches.append(device) 
+
+    if matches: 
+        # Prefer the exact configured address if it appeared. 
+        for device in matches: 
+            if str(device.address).lower() == target_address: 
+                return device 
+        return matches[0] 
+
+    # Return a useful error that also tells the user what was found. 
+    visible = [] 
+    for device in devices: 
+        name = str( 
+            getattr(device, "name", "") or "Unknown" 
+        ).strip() 
+        address = str( 
+            getattr(device, "address", "") or "Unknown" 
+        ) 
+        visible.append(f"{name} ({address})") 
+
+    if visible: 
+        preview = ", ".join(visible[:12]) 
+        raise RuntimeError( 
+            "MXW01 was not detected. " 
+            f"Nearby BLE devices: {preview}" 
+        ) 
+
+    raise RuntimeError( 
+        "MXW01 was not detected. " 
+        "Make sure it is powered on, nearby, and disconnected from Fun Print." 
+    ) 
+
+
+def _mxw01_parse_status(packet): 
+    """Parse the A1 status response when the firmware provides the standard payload.""" 
+    packet = bytes(packet) 
+
+    if len(packet) < 8 or packet[:2] != b"\x22\x21": 
+        return { 
+            "ok": False, 
+            "message": "Invalid MXW01 status packet." 
+        } 
+
+    payload_length = int.from_bytes( 
+        packet[4:6], 
+        "little" 
+    ) 
+
+    payload = packet[6:6 + payload_length] 
+
+    if len(payload) < 13: 
+        return { 
+            "ok": True, 
+            "message": "MXW01 connected, but its status payload is shorter than expected.", 
+            "battery": None, 
+            "temperature": None, 
+            "status_flag": None, 
+            "error_code": None, 
+        } 
+
+    battery = payload[9] 
+    temperature = payload[10] 
+    status_flag = payload[12] 
+    error_code = payload[13] if len(payload) > 13 else 0 
+
+    error_names = { 
+        1: "No paper", 
+        9: "No paper", 
+        4: "Overheated", 
+        8: "Low battery", 
+    } 
+
+    if status_flag != 0: 
+        message = error_names.get( 
+            error_code, 
+            f"Printer reported error code {error_code}." 
+        ) 
+        return { 
+            "ok": False, 
+            "message": message, 
+            "battery": battery, 
+            "temperature": temperature, 
+            "status_flag": status_flag, 
+            "error_code": error_code, 
+        } 
+
+    return { 
+        "ok": True, 
+        "message": "Ready", 
+        "battery": battery, 
+        "temperature": temperature, 
+        "status_flag": status_flag, 
+        "error_code": error_code, 
+    } 
+
+
+async def _mxw01_connection_test_async(): 
+    """Scan, connect, subscribe to status notifications, and query A1.""" 
+    from bleak import BleakClient 
+
+    device = await _mxw01_find_device() 
+
+    status_event = asyncio.Event() 
+    status_result = {"packet": None} 
+
+    def notification_handler(_, data): 
+        packet = bytes(data) 
+        if ( 
+            len(packet) >= 3 
+            and packet[:2] == b"\x22\x21" 
+            and packet[2] == 0xA1 
+        ): 
+            status_result["packet"] = packet 
+            status_event.set() 
+
+    async with BleakClient( 
+        device, 
+        timeout=20.0, 
+        winrt={"use_cached_services": False}, 
+    ) as client: 
+
+        if not client.is_connected: 
+            raise RuntimeError( 
+                "MXW01 was detected but Windows could not connect to it." 
+            ) 
+
+        await client.start_notify( 
+            MXW01_NOTIFY_UUID, 
+            notification_handler 
+        ) 
+
+        await client.write_gatt_char( 
+            MXW01_CONTROL_UUID, 
+            _mxw01_command(0xA1, b"\x00"), 
+            response=False, 
+        ) 
+
+        try: 
+            await asyncio.wait_for( 
+                status_event.wait(), 
+                timeout=5.0 
+            ) 
+        except asyncio.TimeoutError: 
+            raise RuntimeError( 
+                "MXW01 connected, but did not answer the A1 status request. " 
+                "The printer may be busy, using a different firmware protocol, " 
+                "or still connected to Fun Print." 
+            ) 
+
+        result = _mxw01_parse_status( 
+            status_result["packet"] 
+        ) 
+
+        try: 
+            await client.stop_notify( 
+                MXW01_NOTIFY_UUID 
+            ) 
+        except Exception: 
+            pass 
+
+        return device, result 
+
+
+def test_mxw01_connection(): 
+    """Return a human-readable MXW01 connection diagnostic.""" 
+    try: 
+        device, status = asyncio.run( 
+            _mxw01_connection_test_async() 
+        ) 
+
+        name = str( 
+            getattr(device, "name", None) 
+            or MXW01_NAME 
+        ) 
+
+        address = str( 
+            getattr(device, "address", None) 
+            or MXW01_ADDRESS 
+        ) 
+
+        if not status.get("ok"): 
+            return False, ( 
+                f"Detected {name} ({address}), but the printer reported: " 
+                f"{status.get('message', 'Unknown error')}." 
+            ) 
+
+        battery = status.get("battery") 
+        temperature = status.get("temperature") 
+
+        details = [] 
+        if battery is not None: 
+            details.append(f"battery {battery}%") 
+        if temperature is not None: 
+            details.append(f"temperature {temperature}") 
+
+        detail_text = ( 
+            " (" + ", ".join(details) + ")" 
+            if details else "" 
+        ) 
+
+        return True, ( 
+            f"MXW01 connected successfully: {name} ({address}). " 
+            f"Printer status: Ready{detail_text}." 
+        ) 
+
+    except ImportError: 
+        return False, ( 
+            "MXW01 printing needs Bleak and Pillow. " 
+            "Run: pip install -U bleak Pillow" 
+        ) 
+    except Exception as exc: 
+        return False, f"MXW01 connection test failed: {exc}" 
 
 
 def _mxw01_slip_image(cart): 
@@ -2468,68 +2559,6 @@ def _mxw01_slip_image(cart):
 
     return line_count, b"".join(rows) 
 
-
-
-def _mxw01_parse_status(packet):
-    """Parse the A1 status response from an MXW01 printer."""
-    packet = bytes(packet)
-
-    if len(packet) < 8 or packet[:2] != b"\x22\x21":
-        return {
-            "ok": False,
-            "message": "Invalid MXW01 status packet."
-        }
-
-    payload_length = int.from_bytes(
-        packet[4:6],
-        "little"
-    )
-    payload = packet[6:6 + payload_length]
-
-    if len(payload) < 13:
-        return {
-            "ok": True,
-            "message": "MXW01 connected, but its status payload is shorter than expected.",
-            "battery": None,
-            "temperature": None,
-            "status_flag": None,
-            "error_code": None,
-        }
-
-    battery = payload[9]
-    temperature = payload[10]
-    status_flag = payload[12]
-    error_code = payload[13] if len(payload) > 13 else 0
-
-    error_names = {
-        1: "No paper",
-        9: "No paper",
-        4: "Overheated",
-        8: "Low battery",
-    }
-
-    if status_flag != 0:
-        message = error_names.get(
-            error_code,
-            f"Printer reported error code {error_code}."
-        )
-        return {
-            "ok": False,
-            "message": message,
-            "battery": battery,
-            "temperature": temperature,
-            "status_flag": status_flag,
-            "error_code": error_code,
-        }
-
-    return {
-        "ok": True,
-        "message": "Ready",
-        "battery": battery,
-        "temperature": temperature,
-        "status_flag": status_flag,
-        "error_code": error_code,
-    }
 
 def _mxw01_print_async(cart):
     """Send one reference slip directly to MXW01 over BLE.
@@ -2800,32 +2829,10 @@ def _mxw01_print_async(cart):
 
     return asyncio.run(run())
 
-def is_streamlit_cloud():
-    """Return True when this code is running on Streamlit Community Cloud."""
-    runtime = str(
-        os.getenv("STREAMLIT_RUNTIME_ENVIRONMENT", "")
-    ).strip().lower()
-
-    return runtime in {"cloud", "streamlit_cloud", "community_cloud"}
-
-
 def print_mxw01_reference_slip(cart):
-    """
-    Print directly to MXW01 only on the local Windows computer.
-
-    Streamlit Community Cloud cannot access the Bluetooth adapter or
-    printer attached to the user's tablet/computer, so Cloud must use
-    the browser print dialog instead.
-    """
+    """Print the reference slip directly to MXW01 on the Streamlit host."""
     if not cart:
         return False, "There is no reference slip to print."
-
-    if is_streamlit_cloud() or os.name != "nt":
-        return False, (
-            "Browser printing is required on Streamlit Cloud. "
-            "Use the Print Reference Slip button in the browser."
-        )
-
 
     try:
         result = _mxw01_print_async(cart)
@@ -2836,6 +2843,9 @@ def print_mxw01_reference_slip(cart):
                 "Reference slip printed successfully on MXW01."
             )
 
+        # Data reached the printer, but physical completion was not
+        # confirmed. This is intentionally False so the UI does not claim
+        # a confirmed print when the printer never sent AA.
         return False, result.get(
             "message",
             "MXW01 did not confirm completion of the print."
@@ -2849,262 +2859,20 @@ def print_mxw01_reference_slip(cart):
     except Exception as exc:
         return False, f"MXW01 print failed: {exc}"
 
-def print_mxw01_web_bluetooth_html(cart):
-    """Render a browser button that prints directly to MXW01 via Web Bluetooth."""
-    line_count, image_data = _mxw01_slip_image(cart)
-    image_b64 = base64.b64encode(image_data).decode("ascii")
-
-    template = r"""
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-html, body { margin:0; padding:0; background:transparent; font-family:Arial,sans-serif; }
-#mxw01-print {
-    width:100%; height:48px; border:0; border-radius:9px;
-    background:#ed1760; color:#fff; font-size:15px; font-weight:800;
-    cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.12);
-}
-#mxw01-print:hover { background:#d9075d; }
-#mxw01-print:disabled { opacity:.65; cursor:wait; }
-#mxw01-status { margin-top:6px; text-align:center; font-size:12px; color:#666; min-height:16px; }
-</style>
-</head>
-<body>
-<button id="mxw01-print">🖨️ Print Reference Slip</button>
-<div id="mxw01-status"></div>
-<script>
-(function() {
-    const SERVICE = __SERVICE__;
-    const CONTROL = __CONTROL__;
-    const NOTIFY = __NOTIFY__;
-    const DATA = __DATA__;
-    const INTENSITY = __INTENSITY__;
-    const CHUNK = __CHUNK__;
-    const LINE_COUNT = __LINE_COUNT__;
-    const IMAGE_B64 = __IMAGE_B64__;
-
-    const button = document.getElementById('mxw01-print');
-    const status = document.getElementById('mxw01-status');
-
-    function setStatus(message, error=false) {
-        status.textContent = message;
-        status.style.color = error ? '#c62828' : '#666';
-    }
-
-    function crc8(bytes) {
-        let crc = 0;
-        for (const value of bytes) {
-            crc ^= value;
-            for (let i=0; i<8; i++) {
-                if (crc & 0x80) crc = ((crc << 1) ^ 0x07) & 0xFF;
-                else crc = (crc << 1) & 0xFF;
-            }
-        }
-        return crc;
-    }
-
-    function command(commandId, payload) {
-        const out = new Uint8Array(8 + payload.length);
-        out[0] = 0x22; out[1] = 0x21;
-        out[2] = commandId; out[3] = 0x00;
-        out[4] = payload.length & 0xFF;
-        out[5] = (payload.length >> 8) & 0xFF;
-        out.set(payload, 6);
-        out[6 + payload.length] = crc8(payload);
-        out[7 + payload.length] = 0xFF;
-        return out;
-    }
-
-    function fromBase64(value) {
-        const raw = atob(value);
-        const out = new Uint8Array(raw.length);
-        for (let i=0; i<raw.length; i++) out[i] = raw.charCodeAt(i);
-        return out;
-    }
-
-    function packetCommand(data) {
-        return data && data.length >= 3 && data[0] === 0x22 && data[1] === 0x21
-            ? data[2] : null;
-    }
-
-    async function findPrinter() {
-        if (!navigator.bluetooth) {
-            throw new Error('Web Bluetooth is not supported by this browser. Use Chrome or Edge.');
-        }
-
-        // After the first permission grant, getDevices() reuses the
-        // previously authorized MXW01 without opening the device picker.
-        if (navigator.bluetooth.getDevices) {
-            const granted = await navigator.bluetooth.getDevices();
-            const existing = granted.find(d =>
-                (d.name || '').toLowerCase() === 'mxw01' ||
-                (d.name || '').toLowerCase().startsWith('mxw01')
-            );
-            if (existing) return existing;
-        }
-
-        // First use only: some MXW01 firmware does not advertise its
-        // local name/service UUID in the advertisement packet. Using a
-        // namePrefix/service filter can therefore make Chrome report
-        // "No compatible devices found" even though MXW01 is nearby.
-        // Accept the BLE device picker and use the MXW01 GATT service as
-        // the actual compatibility check after the device is selected.
-        return await navigator.bluetooth.requestDevice({
-            acceptAllDevices: true,
-            optionalServices: [SERVICE]
-        });
-    }
-
-    async function getCharacteristics(device) {
-        if (!device.gatt) throw new Error('MXW01 does not expose a GATT connection.');
-        const server = device.gatt.connected ? device.gatt : await device.gatt.connect();
-        const service = await server.getPrimaryService(SERVICE);
-        const control = await service.getCharacteristic(CONTROL);
-        const notify = await service.getCharacteristic(NOTIFY);
-        const data = await service.getCharacteristic(DATA);
-        return { server, control, notify, data };
-    }
-
-    async function printToPrinter() {
-        const device = await findPrinter();
-        setStatus('Connecting to MXW01...');
-        const { control, notify, data } = await getCharacteristics(device);
-
-        let a9Resolve, a9Reject, completeResolve;
-        const a9Promise = new Promise((resolve, reject) => { a9Resolve=resolve; a9Reject=reject; });
-        const completePromise = new Promise(resolve => { completeResolve=resolve; });
-
-        const onNotify = event => {
-            const packet = new Uint8Array(event.target.value.buffer);
-            const cmd = packetCommand(packet);
-            if (cmd === 0xA9) {
-                const len = packet.length >= 6 ? (packet[4] | (packet[5] << 8)) : 0;
-                const payload = packet.slice(6, 6 + len);
-                if (payload.length && payload[0] !== 0x00) {
-                    a9Reject(new Error('MXW01 rejected the print request (status ' + payload[0].toString(16).padStart(2,'0') + ').'));
-                } else {
-                    a9Resolve();
-                }
-            } else if (cmd === 0xAA) {
-                completeResolve();
-            }
-        };
-
-        await notify.startNotifications();
-        notify.addEventListener('characteristicvaluechanged', onNotify);
-
-        try {
-            setStatus('Preparing printer...');
-            await control.writeValueWithoutResponse(command(0xA1, new Uint8Array([0x00])));
-            await new Promise(r => setTimeout(r, 250));
-            await control.writeValueWithoutResponse(command(0xA2, new Uint8Array([INTENSITY])));
-            await control.writeValueWithoutResponse(command(0xA9, new Uint8Array([
-                LINE_COUNT & 0xFF, (LINE_COUNT >> 8) & 0xFF, 0x30, 0x00
-            ])));
-
-            await Promise.race([
-                a9Promise,
-                new Promise((_, reject) => setTimeout(() => reject(new Error('MXW01 did not acknowledge the print request.')), 7000))
-            ]);
-
-            const image = fromBase64(IMAGE_B64);
-            setStatus('Sending reference slip to MXW01...');
-
-            for (let offset=0; offset<image.length; offset += CHUNK) {
-                const part = image.slice(offset, Math.min(offset + CHUNK, image.length));
-                await data.writeValueWithoutResponse(part);
-                await new Promise(r => setTimeout(r, 35));
-            }
-
-            setStatus('Printing reference slip...');
-            await control.writeValueWithoutResponse(command(0xAD, new Uint8Array([0x00])));
-
-            await Promise.race([
-                completePromise,
-                new Promise(resolve => setTimeout(resolve, 8000))
-            ]);
-
-            setStatus('✅ Reference slip printed on MXW01.');
-        } finally {
-            notify.removeEventListener('characteristicvaluechanged', onNotify);
-            try { await notify.stopNotifications(); } catch(e) {}
-            try { if (device.gatt && device.gatt.connected) device.gatt.disconnect(); } catch(e) {}
-        }
-    }
-
-    button.addEventListener('click', async function() {
-        button.disabled = true;
-        setStatus('Starting MXW01 printing...');
-        try {
-            await printToPrinter();
-        } catch (error) {
-            console.error(error);
-            setStatus('❌ ' + (error && error.message ? error.message : error), true);
-        } finally {
-            button.disabled = false;
-        }
-    });
-})();
-</script>
-</body>
-</html>
-"""
-
-    # Use the same MXW01 UUID constants as the native Windows BLE printer.
-    # These names must be defined in Python before the HTML template is
-    # rendered; otherwise Streamlit Cloud raises NameError while building
-    # the browser-print component.
-    service_uuid = MXW01_SERVICE_UUID
-    control_uuid = MXW01_CONTROL_UUID
-    notify_uuid = MXW01_NOTIFY_UUID
-    data_uuid = MXW01_DATA_UUID
-    intensity = MXW01_INTENSITY
-    chunk_size = MXW01_CHUNK_SIZE
-
-    replacements = {
-        "__SERVICE__": json.dumps(service_uuid),
-        "__CONTROL__": json.dumps(control_uuid),
-        "__NOTIFY__": json.dumps(notify_uuid),
-        "__DATA__": json.dumps(data_uuid),
-        "__INTENSITY__": str(intensity),
-        "__CHUNK__": str(chunk_size),
-        "__LINE_COUNT__": str(line_count),
-        "__IMAGE_B64__": json.dumps(image_b64),
-    }
-    for key, value in replacements.items():
-        template = template.replace(key, value)
-    return template
-
-
 def print_reference_slip_html(cart): 
     """Browser fallback when direct MXW01 printing is unavailable.""" 
     slip_html = build_reference_slip_html(cart) 
     return slip_html.replace( 
         "</body>", 
         """ 
-        <script>
-        (function () {
-            function autoPrint() {
-                try {
-                    window.focus();
-                    window.print();
-                } catch (e) {
-                    console.error('Automatic printing failed:', e);
-                }
-            }
-
-            if (document.readyState === 'complete') {
-                setTimeout(autoPrint, 150);
-            } else {
-                window.addEventListener('load', function () {
-                    setTimeout(autoPrint, 150);
-                }, { once: true });
-            }
-        })();
-        </script>
-        </body>
+        <script> 
+        window.addEventListener('load', function () { 
+            setTimeout(function () { 
+                window.print(); 
+            }, 500); 
+        }); 
+        </script> 
+        </body> 
         """ 
     ) 
 
@@ -3322,8 +3090,9 @@ def reference_slip_popup():
     # RECEIPT PREVIEW
     #
     # IMPORTANT:
-    # The receipt preview is shown first. Printing starts only when
-    # the customer clicks the "Print Reference Slip" button.
+    # The receipt does NOT print automatically.
+    # Printing happens ONLY when the customer clicks
+    # the "Print Reference Slip" button inside the receipt.
     # ------------------------------------------------------
     components.html(
         build_reference_slip_html(
@@ -3334,13 +3103,11 @@ def reference_slip_popup():
     )
 
     # ------------------------------------------------------
-    # PRINT BUTTON
+    # DIRECT MXW01 PRINT BUTTON
     # ------------------------------------------------------
-    # LOCAL WINDOWS:
-    #     Use direct MXW01 Bluetooth printing.
-    # STREAMLIT CLOUD:
-    #     Use the browser print dialog because the Cloud server
-    #     cannot access the customer's local Bluetooth hardware.
+    # This is a real Streamlit button so it can call the
+    # Python MXW01 BLE printer directly. It does NOT use
+    # window.print() or the browser print dialog.
     st.markdown(
         """
         <style>
@@ -3360,58 +3127,41 @@ def reference_slip_popup():
         unsafe_allow_html=True
     )
 
-    if is_streamlit_cloud() or os.name != "nt":
-        # --------------------------------------------------
-        # STREAMLIT CLOUD / WEB BLUETOOTH MXW01 PRINT
-        # --------------------------------------------------
-        # The Streamlit server cannot access the customer's Bluetooth
-        # adapter. Web Bluetooth moves the BLE connection into the browser,
-        # so the printer is reached directly from the customer's device.
-        # The first use requires the browser's one-time Bluetooth permission.
-        # After permission is granted, later clicks use getDevices() and do
-        # not show a printer picker or a print dialog.
-        components.html(
-            print_mxw01_web_bluetooth_html(
+    if st.button(
+        "🖨️ Print Reference Slip",
+        key="direct_mxw01_print_reference_slip",
+        use_container_width=True,
+        type="primary"
+    ):
+        with st.spinner("🖨️ Printing reference slip..."):
+            success, message = print_mxw01_reference_slip(
                 reference_slip_cart
-            ),
-            height=78,
-            scrolling=False
-        )
+            )
 
-    else:
-        # --------------------------------------------------
-        # LOCAL WINDOWS MXW01 BLUETOOTH PRINT
-        # --------------------------------------------------
-        if st.button(
-            "🖨️ Print Reference Slip",
-            key="direct_mxw01_print_reference_slip",
-            use_container_width=True,
-            type="primary"
-        ):
-            with st.spinner("🖨️ Printing reference slip..."):
-                success, message = print_mxw01_reference_slip(
-                    reference_slip_cart
-                )
+        if success:
+            print_key = (
+                f"mxw01_printed_"
+                f"{st.session_state.get('request_number') or 'current'}"
+            )
+            st.session_state[print_key] = True
 
-            if success:
-                print_key = (
-                    f"mxw01_printed_"
-                    f"{st.session_state.get('request_number') or 'current'}"
-                )
-                st.session_state[print_key] = True
+            # Clear My Cart ONLY after MXW01 confirms that the
+            # physical print operation completed successfully.
+            st.session_state.order_cart = []
+            st.session_state.order_medicine_name = None
+            st.session_state.pending_purchase_medicine = None
+            st.session_state.reference_slip_printed = True
 
-                # Clear My Cart only after MXW01 confirms completion.
-                st.session_state.order_cart = []
-                st.session_state.order_medicine_name = None
-                st.session_state.pending_purchase_medicine = None
-                st.session_state.reference_slip_printed = True
-                st.session_state.show_slip = False
-                st.session_state.reference_slip_cart = []
+            # Close the slip and refresh immediately so My Cart is empty
+            # as soon as the printer confirms the physical print.
+            st.session_state.show_slip = False
+            st.session_state.reference_slip_cart = []
 
-                st.success("🖨️ " + message)
-                st.rerun()
-            else:
-                st.error("🖨️ " + message)
+            st.success("🖨️ " + message)
+            st.rerun()
+        else:
+            # Keep the cart if printing failed or completion was not confirmed.
+            st.error("🖨️ " + message)
 
     # ------------------------------------------------------
     # CLOSE BUTTON
@@ -3873,78 +3623,48 @@ def render_order_panel():
     # SEND ORDER 
     # ------------------------------------------------------ 
 
-    if cart:
+    if cart: 
 
-        if st.button(
-            "🖨️ Print Reference Slip & Send Order",
-            key="print_and_send_order",
-            use_container_width=True,
-            type="primary"
-        ):
+        if st.button( 
+            "🖨️ Print Reference Slip & Send Order", 
+            key="print_and_send_order", 
+            use_container_width=True, 
+            type="primary" 
+        ): 
 
-            # --------------------------------------------------
-            # SAVE ORDER FIRST
-            # --------------------------------------------------
+            # -------------------------------------------------- 
+            # SAVE ORDER 
+            # -------------------------------------------------- 
 
-            request_number = save_order_request(cart)
+            request_number = ( 
+                save_order_request( 
+                    cart 
+                ) 
+            ) 
 
-            if request_number:
+            if request_number: 
 
+                # -------------------------------------------------- 
+                # CREATE RECEIPT SNAPSHOT 
+                # -------------------------------------------------- 
+
+                st.session_state.reference_slip_cart = [ 
+                    dict(item) 
+                    for item in cart 
+                ] 
+
+                # -------------------------------------------------- 
                 # --------------------------------------------------
-                # CREATE REFERENCE-SLIP SNAPSHOT
+                # KEEP CART UNTIL PRINTING IS CONFIRMED
                 # --------------------------------------------------
+                # The order remains visible in My Cart while the
+                # reference slip is being displayed and printed.
 
-                st.session_state.reference_slip_cart = [
-                    dict(item)
-                    for item in cart
-                ]
+                st.session_state.show_slip = True 
 
-                # --------------------------------------------------
-                # LOCAL WINDOWS: PRINT DIRECTLY TO MXW01
-                # --------------------------------------------------
-                # Do NOT open the browser print dialog here.
-                # The local Windows app talks to MXW01 through
-                # Bleak Bluetooth and prints immediately.
+                st.rerun() 
 
-                if os.name == "nt" and not is_streamlit_cloud():
-                    with st.spinner("🖨️ Printing reference slip to MXW01..."):
-                        success, message = print_mxw01_reference_slip(
-                            st.session_state.reference_slip_cart
-                        )
-
-                    if success:
-                        print_key = f"mxw01_printed_{request_number}"
-                        st.session_state[print_key] = True
-                        st.session_state.reference_slip_printed = True
-
-                        # Clear only after the printer confirms completion.
-                        st.session_state.order_cart = []
-                        st.session_state.order_medicine_name = None
-                        st.session_state.pending_purchase_medicine = None
-                        st.session_state.show_slip = False
-                        st.session_state.reference_slip_cart = []
-
-                        st.success("🖨️ " + message)
-                        st.rerun()
-                    else:
-                        # Keep the order/cart so the customer can retry.
-                        st.error("🖨️ " + message)
-
-                        # Show the reference slip popup with the direct
-                        # MXW01 retry button.
-                        st.session_state.show_slip = True
-                        st.rerun()
-
-                else:
-                    # --------------------------------------------------
-                    # STREAMLIT CLOUD: BROWSER PRINT FALLBACK
-                    # --------------------------------------------------
-                    # Cloud cannot access the local Bluetooth adapter.
-                    # Keep the existing browser-print flow.
-                    st.session_state.show_slip = True
-                    st.rerun()
-
-        if st.button(
+        if st.button( 
             "ⓧ Cancel Order", 
             key="clear_order", 
             use_container_width=True 
