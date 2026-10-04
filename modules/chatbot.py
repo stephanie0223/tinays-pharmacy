@@ -2758,9 +2758,14 @@ html, body { margin:0; padding:0; background:transparent; font-family:Arial,sans
             if (existing) return existing;
         }
 
-        // First use only: the browser must show its Bluetooth permission picker.
+        // First use only: some MXW01 firmware does not advertise its
+        // local name/service UUID in the advertisement packet. Using a
+        // namePrefix/service filter can therefore make Chrome report
+        // "No compatible devices found" even though MXW01 is nearby.
+        // Accept the BLE device picker and use the MXW01 GATT service as
+        // the actual compatibility check after the device is selected.
         return await navigator.bluetooth.requestDevice({
-            filters: [{ namePrefix: 'MXW01' }],
+            acceptAllDevices: true,
             optionalServices: [SERVICE]
         });
     }
