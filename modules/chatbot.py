@@ -2100,200 +2100,48 @@ def _mxw01_command(command_id, payload=b""):
 
 
 async def _mxw01_find_device():
-    """Return the configured MXW01 Bluetooth address directly.
+    """Find MXW01 using Windows BLE discovery and return the BLEDevice."""
+    from bleak import BleakScanner
 
-    The printer address is already known, so this function deliberately
-    avoids BleakScanner.find_device_by_address() and BleakScanner.discover().
-    This prevents the Windows Bluetooth scan error that was occurring with
-    the previous implementation.
-    """
-    if not MXW01_ADDRESS:
-        raise RuntimeError(
-            "MXW01 Bluetooth address is not configured."
+    target_address = MXW01_ADDRESS.strip().lower()
+    target_name = MXW01_NAME.strip().lower()
+
+    try:
+        devices = await BleakScanner.discover(
+            timeout=MXW01_SCAN_TIMEOUT
         )
+    except Exception as exc:
+        raise RuntimeError(
+            f"Windows Bluetooth scan failed: {exc}"
+        ) from exc
 
-    return MXW01_ADDRESS
+    # Prefer the exact configured Bluetooth address.
+    for device in devices:
+        address = str(
+            getattr(device, "address", "") or ""
+        ).strip().lower()
+        if address == target_address:
+            return device
 
+    # Fallback to the printer name.
+    for device in devices:
+        name = str(
+            getattr(device, "name", "") or ""
+        ).strip().lower()
+        if name == target_name or target_name in name:
+            return device
 
-def _mxw01_parse_status(packet): 
-    """Parse the A1 status response when the firmware provides the standard payload.""" 
-    packet = bytes(packet) 
-
-    if len(packet) < 8 or packet[:2] != b"\x22\x21": 
-        return { 
-            "ok": False, 
-            "message": "Invalid MXW01 status packet." 
-        } 
-
-    payload_length = int.from_bytes( 
-        packet[4:6], 
-        "little" 
-    ) 
-
-    payload = packet[6:6 + payload_length] 
-
-    if len(payload) < 13: 
-        return { 
-            "ok": True, 
-            "message": "MXW01 connected, but its status payload is shorter than expected.", 
-            "battery": None, 
-            "temperature": None, 
-            "status_flag": None, 
-            "error_code": None, 
-        } 
-
-    battery = payload[9] 
-    temperature = payload[10] 
-    status_flag = payload[12] 
-    error_code = payload[13] if len(payload) > 13 else 0 
-
-    error_names = { 
-        1: "No paper", 
-        9: "No paper", 
-        4: "Overheated", 
-        8: "Low battery", 
-    } 
-
-    if status_flag != 0: 
-        message = error_names.get( 
-            error_code, 
-            f"Printer reported error code {error_code}." 
-        ) 
-        return { 
-            "ok": False, 
-            "message": message, 
-            "battery": battery, 
-            "temperature": temperature, 
-            "status_flag": status_flag, 
-            "error_code": error_code, 
-        } 
-
-    return { 
-        "ok": True, 
-        "message": "Ready", 
-        "battery": battery, 
-        "temperature": temperature, 
-        "status_flag": status_flag, 
-        "error_code": error_code, 
-    } 
-
-
-async def _mxw01_connection_test_async(): 
-    """Scan, connect, subscribe to status notifications, and query A1.""" 
-    from bleak import BleakClient 
-
-    device = await _mxw01_find_device() 
-
-    status_event = asyncio.Event() 
-    status_result = {"packet": None} 
-
-    def notification_handler(_, data): 
-        packet = bytes(data) 
-        if ( 
-            len(packet) >= 3 
-            and packet[:2] == b"\x22\x21" 
-            and packet[2] == 0xA1 
-        ): 
-            status_result["packet"] = packet 
-            status_event.set() 
-
-    async with BleakClient( 
-        device, 
-        timeout=20.0, 
-        winrt={"use_cached_services": False}, 
-    ) as client: 
-
-        if not client.is_connected: 
-            raise RuntimeError( 
-                "MXW01 was detected but Windows could not connect to it." 
-            ) 
-
-        await client.start_notify( 
-            MXW01_NOTIFY_UUID, 
-            notification_handler 
-        ) 
-
-        await client.write_gatt_char( 
-            MXW01_CONTROL_UUID, 
-            _mxw01_command(0xA1, b"\x00"), 
-            response=False, 
-        ) 
-
-        try: 
-            await asyncio.wait_for( 
-                status_event.wait(), 
-                timeout=5.0 
-            ) 
-        except asyncio.TimeoutError: 
-            raise RuntimeError( 
-                "MXW01 connected, but did not answer the A1 status request. " 
-                "The printer may be busy, using a different firmware protocol, " 
-                "or still connected to Fun Print." 
-            ) 
-
-        result = _mxw01_parse_status( 
-            status_result["packet"] 
-        ) 
-
-        try: 
-            await client.stop_notify( 
-                MXW01_NOTIFY_UUID 
-            ) 
-        except Exception: 
-            pass 
-
-        return device, result 
-
-
-def test_mxw01_connection(): 
-    """Return a human-readable MXW01 connection diagnostic.""" 
-    try: 
-        device, status = asyncio.run( 
-            _mxw01_connection_test_async() 
-        ) 
-
-        name = str( 
-            getattr(device, "name", None) 
-            or MXW01_NAME 
-        ) 
-
-        address = str( 
-            getattr(device, "address", None) 
-            or MXW01_ADDRESS 
-        ) 
-
-        if not status.get("ok"): 
-            return False, ( 
-                f"Detected {name} ({address}), but the printer reported: " 
-                f"{status.get('message', 'Unknown error')}." 
-            ) 
-
-        battery = status.get("battery") 
-        temperature = status.get("temperature") 
-
-        details = [] 
-        if battery is not None: 
-            details.append(f"battery {battery}%") 
-        if temperature is not None: 
-            details.append(f"temperature {temperature}") 
-
-        detail_text = ( 
-            " (" + ", ".join(details) + ")" 
-            if details else "" 
-        ) 
-
-        return True, ( 
-            f"MXW01 connected successfully: {name} ({address}). " 
-            f"Printer status: Ready{detail_text}." 
-        ) 
-
-    except ImportError: 
-        return False, ( 
-            "MXW01 printing needs Bleak and Pillow. " 
-            "Run: pip install -U bleak Pillow" 
-        ) 
-    except Exception as exc: 
-        return False, f"MXW01 connection test failed: {exc}" 
+    detected = [
+        (
+            getattr(device, "address", ""),
+            getattr(device, "name", "")
+        )
+        for device in devices
+    ]
+    raise RuntimeError(
+        "MXW01 was not found. "
+        f"Detected Bluetooth devices: {detected}"
+    )
 
 
 def _mxw01_slip_image(cart): 
