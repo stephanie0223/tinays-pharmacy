@@ -2443,13 +2443,13 @@ def _mxw01_slip_image(cart):
                     pass
         return ImageFont.load_default()
 
-    regular = load_font(font_candidates, 13)
-    small = load_font(font_candidates, 11)
-    bold = load_font(bold_candidates, 13)
-    pharmacy_font = load_font(bold_candidates, 19)
-    title_font = load_font(bold_candidates, 17)
-    medicine_font = load_font(bold_candidates, 15)
-    total_font = load_font(bold_candidates, 19)
+    regular = load_font(font_candidates, 14)
+    small = load_font(font_candidates, 12)
+    bold = load_font(bold_candidates, 14)
+    pharmacy_font = load_font(bold_candidates, 21)
+    title_font = load_font(bold_candidates, 19)
+    medicine_font = load_font(bold_candidates, 17)
+    total_font = load_font(bold_candidates, 21)
 
     request_number = (
         st.session_state.get("request_number")
