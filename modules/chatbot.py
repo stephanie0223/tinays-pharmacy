@@ -137,6 +137,121 @@ def get_gemini_client():
         return None 
 
 
+# ==========================================================
+# GEMINI REST API FALLBACK
+# ==========================================================
+
+def get_gemini_api_key():
+    """Read the Gemini API key from Streamlit Cloud secrets or environment."""
+    api_key = None
+
+    try:
+        api_key = st.secrets.get("GEMINI_API_KEY")
+    except Exception:
+        api_key = None
+
+    if not api_key:
+        api_key = os.getenv("GEMINI_API_KEY")
+
+    if isinstance(api_key, str):
+        api_key = api_key.strip().strip('"').strip("'")
+
+    return api_key or None
+
+
+def ask_gemini_rest(system_prompt):
+    """Call Gemini directly over HTTPS for Streamlit Cloud reliability."""
+    api_key = get_gemini_api_key()
+
+    if not api_key:
+        raise RuntimeError(
+            "GEMINI_API_KEY is missing from Streamlit Secrets."
+        )
+
+    models_to_try = [
+        GEMINI_MODEL,
+        "gemini-3.8-flash",
+    ]
+
+    last_error = None
+
+    for model in models_to_try:
+        url = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{model}:generateContent"
+        )
+
+        payload = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [
+                        {"text": system_prompt}
+                    ],
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.2,
+            },
+        }
+
+        try:
+            response = requests.post(
+                url,
+                params={"key": api_key},
+                json=payload,
+                timeout=60,
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                candidates = data.get("candidates") or []
+
+                if candidates:
+                    parts = (
+                        candidates[0]
+                        .get("content", {})
+                        .get("parts", [])
+                    )
+                    text = "".join(
+                        str(part.get("text", ""))
+                        for part in parts
+                        if isinstance(part, dict)
+                    ).strip()
+
+                    if text:
+                        return text
+
+                raise RuntimeError(
+                    "Gemini returned an empty response."
+                )
+
+            try:
+                error_data = response.json()
+                error_message = (
+                    error_data.get("error", {})
+                    .get("message", response.text[:300])
+                )
+            except Exception:
+                error_message = response.text[:300]
+
+            last_error = RuntimeError(
+                f"Gemini API {response.status_code}: {error_message}"
+            )
+
+            # Try the next stable model for model/access errors.
+            continue
+
+        except requests.RequestException as exc:
+            last_error = exc
+            continue
+
+    if last_error:
+        raise last_error
+
+    raise RuntimeError("Gemini API request failed.")
+
+
 # ========================================================== 
 # SESSION STATE 
 # ========================================================== 
@@ -1053,36 +1168,46 @@ CUSTOMER QUESTION
 
 """ 
 
-    try: 
+    try:
+        # Streamlit Cloud can use the HTTPS Gemini API directly even if the
+        # google-genai package is unavailable.
+        if client is None:
+            return ask_gemini_rest(system_prompt)
 
-        response = client.models.generate_content( 
-            model=GEMINI_MODEL, 
-            contents=system_prompt 
-        ) 
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=system_prompt
+        )
 
-        if response and response.text: 
-            return response.text.strip() 
+        if response and response.text:
+            return response.text.strip()
 
-        return ( 
-            "Pasensya, wala nakahatag sang sabat ang Gemini. " 
-            "Palihog sulayi liwat." 
-        ) 
+        raise RuntimeError("Gemini returned an empty response.")
 
-    except Exception: 
-
-        # Gemini 429 quota/rate-limit errors, 503 errors, network errors,
-        # missing configuration, and other API failures automatically use
-        # the local Ollama model. The customer never sees the Gemini error.
-        try: 
-            return ask_ollama(
-                system_prompt,
-                user_question
-            ) 
-        except Exception: 
-            return ( 
-                "Pasensya, temporarily unavailable ang AI chatbot.\n\n" 
-                "Palihog sulayi liwat pagkatapos sang pila ka segundo." 
-            ) 
+    except Exception as gemini_error:
+        # Retry through the direct REST API. This also handles SDK/version
+        # mismatches and transient Gemini SDK errors on Streamlit Cloud.
+        try:
+            return ask_gemini_rest(system_prompt)
+        except Exception:
+            # Ollama only works when the app is running on the same machine
+            # as Ollama. It is normally unavailable on Streamlit Cloud.
+            try:
+                return ask_ollama(
+                    system_prompt,
+                    user_question
+                )
+            except Exception:
+                # Keep the customer-facing message friendly while preserving
+                # the actual failure in Streamlit logs for debugging.
+                print(
+                    "Gemini chatbot error:",
+                    repr(gemini_error)
+                )
+                return (
+                    "Pasensya, temporarily unavailable ang AI chatbot.\n\n"
+                    "Palihog sulayi liwat pagkatapos sang pila ka segundo."
+                )
 
 
 
