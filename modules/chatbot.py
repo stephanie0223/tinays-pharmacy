@@ -1853,6 +1853,7 @@ def build_reference_slip_html(cart):
             </div>
 
             <div class="medicine-row">
+
                 <span>
                     Qty {quantity}
                 </span>
@@ -1864,6 +1865,7 @@ def build_reference_slip_html(cart):
                 <span>
                     ₱{subtotal:,.2f}
                 </span>
+
             </div>
 
         </div>
@@ -1888,23 +1890,29 @@ def build_reference_slip_html(cart):
             body {{
                 margin: 0;
                 padding: 0;
-                background: transparent;
-                font-family: Arial, Helvetica, sans-serif;
+
+                background: #ffffff;
+
+                font-family:
+                    Arial,
+                    Helvetica,
+                    sans-serif;
+
                 color: #111111;
             }}
 
             body {{
-                padding: 8px 0;
+                padding: 5px;
             }}
 
             /* ==================================================
-               RECEIPT PAPER
+               RECEIPT
                ================================================== */
 
             .reference-slip {{
+
                 width: 80mm;
                 max-width: 80mm;
-                min-height: 120mm;
 
                 margin: 0 auto;
 
@@ -1912,12 +1920,12 @@ def build_reference_slip_html(cart):
 
                 background: #ffffff;
 
-                color: #111111;
-
-                border: 1px solid #eeeeee;
+                border: 1px solid #e5e5e5;
 
                 box-shadow:
-                    0 5px 18px rgba(0, 0, 0, 0.10);
+                    0 5px 15px
+                    rgba(0, 0, 0, 0.08);
+
             }}
 
             /* ==================================================
@@ -1925,43 +1933,47 @@ def build_reference_slip_html(cart):
                ================================================== */
 
             .header {{
+
                 text-align: center;
+
+                margin-bottom: 13px;
+
             }}
 
             .pharmacy-name {{
+
                 font-size: 19px;
 
                 font-weight: 800;
-
-                letter-spacing: 0.2px;
 
                 line-height: 1.15;
 
                 margin-bottom: 3px;
 
-                color: #222222;
             }}
 
             .request-title {{
+
                 font-size: 17px;
 
                 font-weight: 900;
 
-                letter-spacing: 0.2px;
-
                 line-height: 1.15;
 
-                color: #111111;
             }}
 
             /* ==================================================
-               SEPARATOR
+               DASHED LINE
                ================================================== */
 
             .separator {{
-                border-top: 1.5px dashed #777777;
 
-                margin: 14px 0 12px;
+                border-top:
+                    1px dashed #777777;
+
+                margin:
+                    12px 0;
+
             }}
 
             /* ==================================================
@@ -1969,31 +1981,27 @@ def build_reference_slip_html(cart):
                ================================================== */
 
             .info {{
+
                 font-size: 10.5px;
 
-                line-height: 1.65;
+                line-height: 1.6;
 
-                color: #222222;
-
-                text-align: left;
             }}
 
             .info-row {{
+
                 display: flex;
 
-                align-items: flex-start;
-
                 gap: 4px;
+
             }}
 
             .info-label {{
-                white-space: nowrap;
 
                 font-weight: 700;
-            }}
 
-            .info-value {{
-                word-break: break-word;
+                white-space: nowrap;
+
             }}
 
             /* ==================================================
@@ -2001,16 +2009,17 @@ def build_reference_slip_html(cart):
                ================================================== */
 
             .medicine-item {{
-                padding: 8px 0 11px;
 
-                border-bottom: 1.5px dashed #777777;
-            }}
+                padding:
+                    8px 0 10px;
 
-            .medicine-item:last-child {{
-                border-bottom: none;
+                border-bottom:
+                    1px dashed #777777;
+
             }}
 
             .medicine-name {{
+
                 font-size: 15px;
 
                 font-weight: 800;
@@ -2018,38 +2027,46 @@ def build_reference_slip_html(cart):
                 line-height: 1.25;
 
                 margin-bottom: 2px;
+
             }}
 
             .generic {{
+
                 font-size: 10.5px;
 
                 color: #555555;
 
-                line-height: 1.4;
+                margin-bottom: 6px;
 
-                margin-bottom: 7px;
             }}
 
             .medicine-row {{
+
                 display: grid;
 
                 grid-template-columns:
                     1fr 1fr 1fr;
 
-                column-gap: 5px;
-
                 font-size: 10.5px;
 
-                color: #222222;
             }}
 
             .medicine-row span:nth-child(1) {{
+
                 text-align: left;
+
             }}
 
-            .medicine-row span:nth-child(2),
+            .medicine-row span:nth-child(2) {{
+
+                text-align: center;
+
+            }}
+
             .medicine-row span:nth-child(3) {{
+
                 text-align: right;
+
             }}
 
             /* ==================================================
@@ -2057,17 +2074,18 @@ def build_reference_slip_html(cart):
                ================================================== */
 
             .total {{
+
                 text-align: center;
 
                 font-size: 19px;
 
                 font-weight: 900;
 
-                line-height: 1.15;
+                margin:
+                    16px 0 17px;
 
-                margin: 16px 0 17px;
+                line-height: 1.2;
 
-                color: #111111;
             }}
 
             /* ==================================================
@@ -2075,14 +2093,15 @@ def build_reference_slip_html(cart):
                ================================================== */
 
             .verification {{
+
                 text-align: center;
 
                 padding: 0 3px;
 
-                color: #222222;
             }}
 
             .verification-title {{
+
                 font-size: 13px;
 
                 font-weight: 900;
@@ -2090,20 +2109,26 @@ def build_reference_slip_html(cart):
                 line-height: 1.25;
 
                 margin-bottom: 8px;
+
             }}
 
             .verification p {{
+
                 font-size: 9.5px;
 
                 line-height: 1.45;
 
-                margin: 5px 0;
+                margin:
+                    5px 0;
 
                 color: #555555;
+
             }}
 
             .verification b {{
-                color: #333333;
+
+                color: #222222;
+
             }}
 
             /* ==================================================
@@ -2111,6 +2136,7 @@ def build_reference_slip_html(cart):
                ================================================== */
 
             .footer {{
+
                 text-align: center;
 
                 font-size: 9.5px;
@@ -2120,6 +2146,7 @@ def build_reference_slip_html(cart):
                 margin-top: 20px;
 
                 line-height: 1.4;
+
             }}
 
             /* ==================================================
@@ -2129,38 +2156,41 @@ def build_reference_slip_html(cart):
             @media print {{
 
                 @page {{
+
                     size: 80mm auto;
 
                     margin: 0;
+
                 }}
 
                 html,
                 body {{
-                    width: 80mm;
 
-                    min-width: 80mm;
+                    width: 80mm;
 
                     margin: 0;
 
                     padding: 0;
 
                     background: #ffffff;
+
                 }}
 
                 .reference-slip {{
+
                     width: 80mm;
 
                     max-width: 80mm;
 
-                    min-height: 0;
-
                     margin: 0;
 
-                    padding: 5mm 4mm 5mm;
+                    padding:
+                        5mm 4mm 5mm;
 
                     border: none;
 
                     box-shadow: none;
+
                 }}
 
             }}
@@ -2175,9 +2205,7 @@ def build_reference_slip_html(cart):
         <div class="reference-slip">
 
 
-            <!-- ==========================================
-                 HEADER
-                 ========================================== -->
+            <!-- HEADER -->
 
             <div class="header">
 
@@ -2192,9 +2220,7 @@ def build_reference_slip_html(cart):
             </div>
 
 
-            <!-- ==========================================
-                 REQUEST INFORMATION
-                 ========================================== -->
+            <!-- REQUEST DETAILS -->
 
             <div class="separator"></div>
 
@@ -2206,12 +2232,11 @@ def build_reference_slip_html(cart):
                         Request No:
                     </span>
 
-                    <span class="info-value">
+                    <span>
                         {html.escape(request_number)}
                     </span>
 
                 </div>
-
 
                 <div class="info-row">
 
@@ -2219,7 +2244,7 @@ def build_reference_slip_html(cart):
                         Date:
                     </span>
 
-                    <span class="info-value">
+                    <span>
                         {html.escape(now)}
                     </span>
 
@@ -2228,18 +2253,14 @@ def build_reference_slip_html(cart):
             </div>
 
 
-            <!-- ==========================================
-                 MEDICINE ITEMS
-                 ========================================== -->
+            <!-- MEDICINE -->
 
             <div class="separator"></div>
 
             {medicine_blocks}
 
 
-            <!-- ==========================================
-                 TOTAL
-                 ========================================== -->
+            <!-- TOTAL -->
 
             <div class="total">
 
@@ -2248,41 +2269,37 @@ def build_reference_slip_html(cart):
             </div>
 
 
-            <!-- ==========================================
-                 VERIFICATION
-                 ========================================== -->
+            <!-- VERIFICATION -->
 
             <div class="verification">
 
                 <div class="verification-title">
 
-                    PHARMACIST VERIFICATION REQUIRED
+                    PHARMACIST VERIFICATION<br>
+                    REQUIRED
 
                 </div>
-
 
                 <p>
                     This is an order request only.
                 </p>
 
-
                 <p>
-                    The medicine will <b>NOT</b> be released
-                    until a pharmacist verifies the request.
+                    The medicine will <b>NOT</b> be
+                    released until a pharmacist
+                    verifies the request.
                 </p>
 
-
                 <p>
-                    Inventory is <b>NOT</b> automatically deducted
-                    when this request is submitted.
+                    Inventory is <b>NOT</b> automatically
+                    deducted when this request
+                    is submitted.
                 </p>
 
             </div>
 
 
-            <!-- ==========================================
-                 FOOTER
-                 ========================================== -->
+            <!-- FOOTER -->
 
             <div class="footer">
 
@@ -2299,7 +2316,6 @@ def build_reference_slip_html(cart):
     """
 
     return reference_slip_html
-
 
 # ========================================================== 
 # MXW01 DIRECT BLE PRINTING 
