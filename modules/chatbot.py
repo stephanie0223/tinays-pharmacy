@@ -5782,7 +5782,6 @@ def render(user):
         [1.55, 1.0],
         gap="small",
         vertical_alignment="top",
-        wrap=True,
     ) 
 
     # ====================================================== 
