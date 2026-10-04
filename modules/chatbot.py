@@ -2344,6 +2344,68 @@ def _mxw01_slip_image(cart):
     return line_count, b"".join(rows) 
 
 
+
+def _mxw01_parse_status(packet):
+    """Parse the A1 status response from an MXW01 printer."""
+    packet = bytes(packet)
+
+    if len(packet) < 8 or packet[:2] != b"\x22\x21":
+        return {
+            "ok": False,
+            "message": "Invalid MXW01 status packet."
+        }
+
+    payload_length = int.from_bytes(
+        packet[4:6],
+        "little"
+    )
+    payload = packet[6:6 + payload_length]
+
+    if len(payload) < 13:
+        return {
+            "ok": True,
+            "message": "MXW01 connected, but its status payload is shorter than expected.",
+            "battery": None,
+            "temperature": None,
+            "status_flag": None,
+            "error_code": None,
+        }
+
+    battery = payload[9]
+    temperature = payload[10]
+    status_flag = payload[12]
+    error_code = payload[13] if len(payload) > 13 else 0
+
+    error_names = {
+        1: "No paper",
+        9: "No paper",
+        4: "Overheated",
+        8: "Low battery",
+    }
+
+    if status_flag != 0:
+        message = error_names.get(
+            error_code,
+            f"Printer reported error code {error_code}."
+        )
+        return {
+            "ok": False,
+            "message": message,
+            "battery": battery,
+            "temperature": temperature,
+            "status_flag": status_flag,
+            "error_code": error_code,
+        }
+
+    return {
+        "ok": True,
+        "message": "Ready",
+        "battery": battery,
+        "temperature": temperature,
+        "status_flag": status_flag,
+        "error_code": error_code,
+    }
+
 def _mxw01_print_async(cart):
     """Send one reference slip directly to MXW01 over BLE.
 
