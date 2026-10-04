@@ -2099,86 +2099,20 @@ def _mxw01_command(command_id, payload=b""):
     return bytes(packet) 
 
 
-async def _mxw01_find_device(): 
-    """Find the MXW01 as a BLEDevice before connecting. 
+async def _mxw01_find_device():
+    """Return the configured MXW01 Bluetooth address directly.
 
-    Using a discovered BLEDevice is more reliable on Windows than 
-    passing the raw MAC address directly to BleakClient. 
-    """ 
-    from bleak import BleakScanner 
+    The printer address is already known, so this function deliberately
+    avoids BleakScanner.find_device_by_address() and BleakScanner.discover().
+    This prevents the Windows Bluetooth scan error that was occurring with
+    the previous implementation.
+    """
+    if not MXW01_ADDRESS:
+        raise RuntimeError(
+            "MXW01 Bluetooth address is not configured."
+        )
 
-    target_address = MXW01_ADDRESS.lower() 
-    target_name = MXW01_NAME.lower() 
-
-    # First try the exact Bluetooth address. 
-    try: 
-        device = await BleakScanner.find_device_by_address( 
-            MXW01_ADDRESS, 
-            timeout=MXW01_SCAN_TIMEOUT, 
-        ) 
-        if device is not None: 
-            return device 
-    except Exception: 
-        pass 
-
-    # Then scan and accept MXW01, MXW01-xxxx, or a device whose 
-    # discovered address matches the configured address. 
-    try: 
-        devices = await BleakScanner.discover( 
-            timeout=MXW01_SCAN_TIMEOUT 
-        ) 
-    except Exception as exc: 
-        raise RuntimeError( 
-            "Windows Bluetooth scan failed: " 
-            f"{exc}" 
-        ) from exc 
-
-    matches = [] 
-
-    for device in devices: 
-        address = str( 
-            getattr(device, "address", "") or "" 
-        ).lower() 
-
-        name = str( 
-            getattr(device, "name", "") or "" 
-        ).strip() 
-
-        if ( 
-            address == target_address 
-            or target_name in name.lower() 
-        ): 
-            matches.append(device) 
-
-    if matches: 
-        # Prefer the exact configured address if it appeared. 
-        for device in matches: 
-            if str(device.address).lower() == target_address: 
-                return device 
-        return matches[0] 
-
-    # Return a useful error that also tells the user what was found. 
-    visible = [] 
-    for device in devices: 
-        name = str( 
-            getattr(device, "name", "") or "Unknown" 
-        ).strip() 
-        address = str( 
-            getattr(device, "address", "") or "Unknown" 
-        ) 
-        visible.append(f"{name} ({address})") 
-
-    if visible: 
-        preview = ", ".join(visible[:12]) 
-        raise RuntimeError( 
-            "MXW01 was not detected. " 
-            f"Nearby BLE devices: {preview}" 
-        ) 
-
-    raise RuntimeError( 
-        "MXW01 was not detected. " 
-        "Make sure it is powered on, nearby, and disconnected from Fun Print." 
-    ) 
+    return MXW01_ADDRESS
 
 
 def _mxw01_parse_status(packet): 
