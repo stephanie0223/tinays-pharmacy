@@ -2611,10 +2611,37 @@ def _mxw01_print_async(cart):
 
     return asyncio.run(run())
 
+def is_streamlit_cloud():
+    """Return True when this code is running on Streamlit Community Cloud."""
+    runtime = str(
+        os.getenv("STREAMLIT_RUNTIME_ENVIRONMENT", "")
+    ).strip().lower()
+
+    return runtime in {"cloud", "streamlit_cloud", "community_cloud"}
+
+
 def print_mxw01_reference_slip(cart):
-    """Print the reference slip directly to MXW01 on the Streamlit host."""
+    """
+    Print directly to MXW01 only on the local Windows computer.
+
+    Streamlit Community Cloud cannot access the Bluetooth adapter or
+    printer attached to the user's tablet/computer, so Cloud must use
+    the browser print dialog instead.
+    """
     if not cart:
         return False, "There is no reference slip to print."
+
+    if is_streamlit_cloud():
+        return False, (
+            "Direct Bluetooth printing is unavailable on Streamlit Cloud. "
+            "Use the browser Print Reference Slip option instead."
+        )
+
+    if os.name != "nt":
+        return False, (
+            "Direct MXW01 Bluetooth printing is available only on Windows. "
+            "Use browser printing on this device."
+        )
 
     try:
         result = _mxw01_print_async(cart)
@@ -2625,9 +2652,6 @@ def print_mxw01_reference_slip(cart):
                 "Reference slip printed successfully on MXW01."
             )
 
-        # Data reached the printer, but physical completion was not
-        # confirmed. This is intentionally False so the UI does not claim
-        # a confirmed print when the printer never sent AA.
         return False, result.get(
             "message",
             "MXW01 did not confirm completion of the print."
@@ -2885,11 +2909,13 @@ def reference_slip_popup():
     )
 
     # ------------------------------------------------------
-    # DIRECT MXW01 PRINT BUTTON
+    # PRINT BUTTON
     # ------------------------------------------------------
-    # This is a real Streamlit button so it can call the
-    # Python MXW01 BLE printer directly. It does NOT use
-    # window.print() or the browser print dialog.
+    # LOCAL WINDOWS:
+    #     Use direct MXW01 Bluetooth printing.
+    # STREAMLIT CLOUD:
+    #     Use the browser print dialog because the Cloud server
+    #     cannot access the customer's local Bluetooth hardware.
     st.markdown(
         """
         <style>
@@ -2909,41 +2935,86 @@ def reference_slip_popup():
         unsafe_allow_html=True
     )
 
-    if st.button(
-        "🖨️ Print Reference Slip",
-        key="direct_mxw01_print_reference_slip",
-        use_container_width=True,
-        type="primary"
-    ):
-        with st.spinner("🖨️ Printing reference slip..."):
-            success, message = print_mxw01_reference_slip(
-                reference_slip_cart
+    if is_streamlit_cloud():
+        # --------------------------------------------------
+        # STREAMLIT CLOUD BROWSER PRINT
+        # --------------------------------------------------
+        st.info(
+            "☁️ Streamlit Cloud detected. Your Bluetooth printer is "
+            "accessed through this device, so the browser print dialog "
+            "will be used."
+        )
+
+        if st.button(
+            "🖨️ Print Reference Slip",
+            key="browser_print_reference_slip",
+            use_container_width=True,
+            type="primary"
+        ):
+            # Render the slip in a small browser component. The HTML
+            # automatically calls window.print() after it loads.
+            components.html(
+                print_reference_slip_html(
+                    reference_slip_cart
+                ),
+                height=1,
+                scrolling=False
             )
 
-        if success:
-            print_key = (
-                f"mxw01_printed_"
-                f"{st.session_state.get('request_number') or 'current'}"
-            )
-            st.session_state[print_key] = True
+            st.session_state.reference_slip_printed = True
+            st.session_state.reference_slip_browser_print_started = True
 
-            # Clear My Cart ONLY after MXW01 confirms that the
-            # physical print operation completed successfully.
+            # The order request has already been saved. Clear the cart
+            # after starting browser printing so the customer does not
+            # accidentally submit the same order again.
             st.session_state.order_cart = []
             st.session_state.order_medicine_name = None
             st.session_state.pending_purchase_medicine = None
-            st.session_state.reference_slip_printed = True
-
-            # Close the slip and refresh immediately so My Cart is empty
-            # as soon as the printer confirms the physical print.
             st.session_state.show_slip = False
             st.session_state.reference_slip_cart = []
 
-            st.success("🖨️ " + message)
-            st.rerun()
-        else:
-            # Keep the cart if printing failed or completion was not confirmed.
-            st.error("🖨️ " + message)
+            st.success(
+                "🖨️ Print dialog opened. Select MXW01 and print the "
+                "reference slip."
+            )
+
+            # Do not immediately rerun here. The browser component needs
+            # to remain mounted long enough to execute window.print().
+
+    else:
+        # --------------------------------------------------
+        # LOCAL WINDOWS MXW01 BLUETOOTH PRINT
+        # --------------------------------------------------
+        if st.button(
+            "🖨️ Print Reference Slip",
+            key="direct_mxw01_print_reference_slip",
+            use_container_width=True,
+            type="primary"
+        ):
+            with st.spinner("🖨️ Printing reference slip..."):
+                success, message = print_mxw01_reference_slip(
+                    reference_slip_cart
+                )
+
+            if success:
+                print_key = (
+                    f"mxw01_printed_"
+                    f"{st.session_state.get('request_number') or 'current'}"
+                )
+                st.session_state[print_key] = True
+
+                # Clear My Cart only after MXW01 confirms completion.
+                st.session_state.order_cart = []
+                st.session_state.order_medicine_name = None
+                st.session_state.pending_purchase_medicine = None
+                st.session_state.reference_slip_printed = True
+                st.session_state.show_slip = False
+                st.session_state.reference_slip_cart = []
+
+                st.success("🖨️ " + message)
+                st.rerun()
+            else:
+                st.error("🖨️ " + message)
 
     # ------------------------------------------------------
     # CLOSE BUTTON
