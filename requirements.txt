@@ -3,4 +3,5 @@ pandas
 google-genai
 requests
 streamlit-mic-recorder
-plotly
+bleak
+Pillow
