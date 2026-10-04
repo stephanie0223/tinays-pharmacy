@@ -4,6 +4,7 @@ import os
 import textwrap 
 import json 
 import asyncio
+import base64
 import requests 
 import streamlit.components.v1 as components 
 from datetime import datetime 
@@ -2071,6 +2072,7 @@ MXW01_MIN_PRINT_LINES = 90
 MXW01_CONTROL_UUID = "0000ae01-0000-1000-8000-00805f9b34fb" 
 MXW01_NOTIFY_UUID = "0000ae02-0000-1000-8000-00805f9b34fb" 
 MXW01_DATA_UUID = "0000ae03-0000-1000-8000-00805f9b34fb" 
+MXW01_SERVICE_UUID = "0000ae30-0000-1000-8000-00805f9b34fb" 
 
 
 def _mxw01_crc8(data): 
@@ -2660,6 +2662,219 @@ def print_mxw01_reference_slip(cart):
     except Exception as exc:
         return False, f"MXW01 print failed: {exc}"
 
+def print_mxw01_web_bluetooth_html(cart):
+    """Render a browser button that prints directly to MXW01 via Web Bluetooth."""
+    line_count, image_data = _mxw01_slip_image(cart)
+    image_b64 = base64.b64encode(image_data).decode("ascii")
+
+    template = r"""
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+html, body { margin:0; padding:0; background:transparent; font-family:Arial,sans-serif; }
+#mxw01-print {
+    width:100%; height:48px; border:0; border-radius:9px;
+    background:#ed1760; color:#fff; font-size:15px; font-weight:800;
+    cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.12);
+}
+#mxw01-print:hover { background:#d9075d; }
+#mxw01-print:disabled { opacity:.65; cursor:wait; }
+#mxw01-status { margin-top:6px; text-align:center; font-size:12px; color:#666; min-height:16px; }
+</style>
+</head>
+<body>
+<button id="mxw01-print">🖨️ Print Reference Slip</button>
+<div id="mxw01-status"></div>
+<script>
+(function() {
+    const SERVICE = __SERVICE__;
+    const CONTROL = __CONTROL__;
+    const NOTIFY = __NOTIFY__;
+    const DATA = __DATA__;
+    const INTENSITY = __INTENSITY__;
+    const CHUNK = __CHUNK__;
+    const LINE_COUNT = __LINE_COUNT__;
+    const IMAGE_B64 = __IMAGE_B64__;
+
+    const button = document.getElementById('mxw01-print');
+    const status = document.getElementById('mxw01-status');
+
+    function setStatus(message, error=false) {
+        status.textContent = message;
+        status.style.color = error ? '#c62828' : '#666';
+    }
+
+    function crc8(bytes) {
+        let crc = 0;
+        for (const value of bytes) {
+            crc ^= value;
+            for (let i=0; i<8; i++) {
+                if (crc & 0x80) crc = ((crc << 1) ^ 0x07) & 0xFF;
+                else crc = (crc << 1) & 0xFF;
+            }
+        }
+        return crc;
+    }
+
+    function command(commandId, payload) {
+        const out = new Uint8Array(8 + payload.length);
+        out[0] = 0x22; out[1] = 0x21;
+        out[2] = commandId; out[3] = 0x00;
+        out[4] = payload.length & 0xFF;
+        out[5] = (payload.length >> 8) & 0xFF;
+        out.set(payload, 6);
+        out[6 + payload.length] = crc8(payload);
+        out[7 + payload.length] = 0xFF;
+        return out;
+    }
+
+    function fromBase64(value) {
+        const raw = atob(value);
+        const out = new Uint8Array(raw.length);
+        for (let i=0; i<raw.length; i++) out[i] = raw.charCodeAt(i);
+        return out;
+    }
+
+    function packetCommand(data) {
+        return data && data.length >= 3 && data[0] === 0x22 && data[1] === 0x21
+            ? data[2] : null;
+    }
+
+    async function findPrinter() {
+        if (!navigator.bluetooth) {
+            throw new Error('Web Bluetooth is not supported by this browser. Use Chrome or Edge.');
+        }
+
+        // After the first permission grant, getDevices() reuses the
+        // previously authorized MXW01 without opening the device picker.
+        if (navigator.bluetooth.getDevices) {
+            const granted = await navigator.bluetooth.getDevices();
+            const existing = granted.find(d =>
+                (d.name || '').toLowerCase() === 'mxw01' ||
+                (d.name || '').toLowerCase().startsWith('mxw01')
+            );
+            if (existing) return existing;
+        }
+
+        // First use only: the browser must show its Bluetooth permission picker.
+        return await navigator.bluetooth.requestDevice({
+            filters: [{ namePrefix: 'MXW01' }],
+            optionalServices: [SERVICE]
+        });
+    }
+
+    async function getCharacteristics(device) {
+        if (!device.gatt) throw new Error('MXW01 does not expose a GATT connection.');
+        const server = device.gatt.connected ? device.gatt : await device.gatt.connect();
+        const service = await server.getPrimaryService(SERVICE);
+        const control = await service.getCharacteristic(CONTROL);
+        const notify = await service.getCharacteristic(NOTIFY);
+        const data = await service.getCharacteristic(DATA);
+        return { server, control, notify, data };
+    }
+
+    async function printToPrinter() {
+        const device = await findPrinter();
+        setStatus('Connecting to MXW01...');
+        const { control, notify, data } = await getCharacteristics(device);
+
+        let a9Resolve, a9Reject, completeResolve;
+        const a9Promise = new Promise((resolve, reject) => { a9Resolve=resolve; a9Reject=reject; });
+        const completePromise = new Promise(resolve => { completeResolve=resolve; });
+
+        const onNotify = event => {
+            const packet = new Uint8Array(event.target.value.buffer);
+            const cmd = packetCommand(packet);
+            if (cmd === 0xA9) {
+                const len = packet.length >= 6 ? (packet[4] | (packet[5] << 8)) : 0;
+                const payload = packet.slice(6, 6 + len);
+                if (payload.length && payload[0] !== 0x00) {
+                    a9Reject(new Error('MXW01 rejected the print request (status ' + payload[0].toString(16).padStart(2,'0') + ').'));
+                } else {
+                    a9Resolve();
+                }
+            } else if (cmd === 0xAA) {
+                completeResolve();
+            }
+        };
+
+        await notify.startNotifications();
+        notify.addEventListener('characteristicvaluechanged', onNotify);
+
+        try {
+            setStatus('Preparing printer...');
+            await control.writeValueWithoutResponse(command(0xA1, new Uint8Array([0x00])));
+            await new Promise(r => setTimeout(r, 250));
+            await control.writeValueWithoutResponse(command(0xA2, new Uint8Array([INTENSITY])));
+            await control.writeValueWithoutResponse(command(0xA9, new Uint8Array([
+                LINE_COUNT & 0xFF, (LINE_COUNT >> 8) & 0xFF, 0x30, 0x00
+            ])));
+
+            await Promise.race([
+                a9Promise,
+                new Promise((_, reject) => setTimeout(() => reject(new Error('MXW01 did not acknowledge the print request.')), 7000))
+            ]);
+
+            const image = fromBase64(IMAGE_B64);
+            setStatus('Sending reference slip to MXW01...');
+
+            for (let offset=0; offset<image.length; offset += CHUNK) {
+                const part = image.slice(offset, Math.min(offset + CHUNK, image.length));
+                await data.writeValueWithoutResponse(part);
+                await new Promise(r => setTimeout(r, 35));
+            }
+
+            setStatus('Printing reference slip...');
+            await control.writeValueWithoutResponse(command(0xAD, new Uint8Array([0x00])));
+
+            await Promise.race([
+                completePromise,
+                new Promise(resolve => setTimeout(resolve, 8000))
+            ]);
+
+            setStatus('✅ Reference slip printed on MXW01.');
+        } finally {
+            notify.removeEventListener('characteristicvaluechanged', onNotify);
+            try { await notify.stopNotifications(); } catch(e) {}
+            try { if (device.gatt && device.gatt.connected) device.gatt.disconnect(); } catch(e) {}
+        }
+    }
+
+    button.addEventListener('click', async function() {
+        button.disabled = true;
+        setStatus('Starting MXW01 printing...');
+        try {
+            await printToPrinter();
+        } catch (error) {
+            console.error(error);
+            setStatus('❌ ' + (error && error.message ? error.message : error), true);
+        } finally {
+            button.disabled = false;
+        }
+    });
+})();
+</script>
+</body>
+</html>
+"""
+
+    replacements = {
+        "__SERVICE__": json.dumps(service_uuid),
+        "__CONTROL__": json.dumps(control_uuid),
+        "__NOTIFY__": json.dumps(notify_uuid),
+        "__DATA__": json.dumps(data_uuid),
+        "__INTENSITY__": str(intensity),
+        "__CHUNK__": str(chunk_size),
+        "__LINE_COUNT__": str(line_count),
+        "__IMAGE_B64__": json.dumps(image_b64),
+    }
+    for key, value in replacements.items():
+        template = template.replace(key, value)
+    return template
+
+
 def print_reference_slip_html(cart): 
     """Browser fallback when direct MXW01 printing is unavailable.""" 
     slip_html = build_reference_slip_html(cart) 
@@ -2944,48 +3159,21 @@ def reference_slip_popup():
 
     if is_streamlit_cloud() or os.name != "nt":
         # --------------------------------------------------
-        # STREAMLIT CLOUD / NON-WINDOWS BROWSER PRINT
+        # STREAMLIT CLOUD / WEB BLUETOOTH MXW01 PRINT
         # --------------------------------------------------
-        st.info(
-            "☁️ Streamlit Cloud detected. Your Bluetooth printer is "
-            "accessed through this device, so the browser print dialog "
-            "will be used."
+        # The Streamlit server cannot access the customer's Bluetooth
+        # adapter. Web Bluetooth moves the BLE connection into the browser,
+        # so the printer is reached directly from the customer's device.
+        # The first use requires the browser's one-time Bluetooth permission.
+        # After permission is granted, later clicks use getDevices() and do
+        # not show a printer picker or a print dialog.
+        components.html(
+            print_mxw01_web_bluetooth_html(
+                reference_slip_cart
+            ),
+            height=78,
+            scrolling=False
         )
-
-        if st.button(
-            "🖨️ Print Reference Slip",
-            key="browser_print_reference_slip",
-            use_container_width=True,
-            type="primary"
-        ):
-            # Render the slip in a browser component. The HTML
-            # automatically calls window.print() as soon as it loads.
-            components.html(
-                print_reference_slip_html(
-                    reference_slip_cart
-                ),
-                height=1,
-                scrolling=False
-            )
-
-            st.session_state.reference_slip_printed = True
-            st.session_state.reference_slip_browser_print_started = True
-
-            # The order request has already been saved. Clear the cart
-            # after starting browser printing so the customer does not
-            # accidentally submit the same order again.
-            st.session_state.order_cart = []
-            st.session_state.order_medicine_name = None
-            st.session_state.pending_purchase_medicine = None
-            st.session_state.show_slip = False
-            st.session_state.reference_slip_cart = []
-
-            st.success(
-                "🖨️ Print dialog opened automatically. Choose your MXW01 printer and confirm printing."
-            )
-
-            # Do not immediately rerun here. The browser component needs
-            # to remain mounted long enough to execute window.print().
 
     else:
         # --------------------------------------------------
@@ -3482,48 +3670,78 @@ def render_order_panel():
     # SEND ORDER 
     # ------------------------------------------------------ 
 
-    if cart: 
+    if cart:
 
-        if st.button( 
-            "🖨️ Print Reference Slip & Send Order", 
-            key="print_and_send_order", 
-            use_container_width=True, 
-            type="primary" 
-        ): 
+        if st.button(
+            "🖨️ Print Reference Slip & Send Order",
+            key="print_and_send_order",
+            use_container_width=True,
+            type="primary"
+        ):
 
-            # -------------------------------------------------- 
-            # SAVE ORDER 
-            # -------------------------------------------------- 
+            # --------------------------------------------------
+            # SAVE ORDER FIRST
+            # --------------------------------------------------
 
-            request_number = ( 
-                save_order_request( 
-                    cart 
-                ) 
-            ) 
+            request_number = save_order_request(cart)
 
-            if request_number: 
+            if request_number:
 
-                # -------------------------------------------------- 
-                # CREATE RECEIPT SNAPSHOT 
-                # -------------------------------------------------- 
-
-                st.session_state.reference_slip_cart = [ 
-                    dict(item) 
-                    for item in cart 
-                ] 
-
-                # -------------------------------------------------- 
                 # --------------------------------------------------
-                # KEEP CART UNTIL PRINTING IS CONFIRMED
+                # CREATE REFERENCE-SLIP SNAPSHOT
                 # --------------------------------------------------
-                # The order remains visible in My Cart while the
-                # reference slip is being displayed and printed.
 
-                st.session_state.show_slip = True 
+                st.session_state.reference_slip_cart = [
+                    dict(item)
+                    for item in cart
+                ]
 
-                st.rerun() 
+                # --------------------------------------------------
+                # LOCAL WINDOWS: PRINT DIRECTLY TO MXW01
+                # --------------------------------------------------
+                # Do NOT open the browser print dialog here.
+                # The local Windows app talks to MXW01 through
+                # Bleak Bluetooth and prints immediately.
 
-        if st.button( 
+                if os.name == "nt" and not is_streamlit_cloud():
+                    with st.spinner("🖨️ Printing reference slip to MXW01..."):
+                        success, message = print_mxw01_reference_slip(
+                            st.session_state.reference_slip_cart
+                        )
+
+                    if success:
+                        print_key = f"mxw01_printed_{request_number}"
+                        st.session_state[print_key] = True
+                        st.session_state.reference_slip_printed = True
+
+                        # Clear only after the printer confirms completion.
+                        st.session_state.order_cart = []
+                        st.session_state.order_medicine_name = None
+                        st.session_state.pending_purchase_medicine = None
+                        st.session_state.show_slip = False
+                        st.session_state.reference_slip_cart = []
+
+                        st.success("🖨️ " + message)
+                        st.rerun()
+                    else:
+                        # Keep the order/cart so the customer can retry.
+                        st.error("🖨️ " + message)
+
+                        # Show the reference slip popup with the direct
+                        # MXW01 retry button.
+                        st.session_state.show_slip = True
+                        st.rerun()
+
+                else:
+                    # --------------------------------------------------
+                    # STREAMLIT CLOUD: BROWSER PRINT FALLBACK
+                    # --------------------------------------------------
+                    # Cloud cannot access the local Bluetooth adapter.
+                    # Keep the existing browser-print flow.
+                    st.session_state.show_slip = True
+                    st.rerun()
+
+        if st.button(
             "ⓧ Cancel Order", 
             key="clear_order", 
             use_container_width=True 
