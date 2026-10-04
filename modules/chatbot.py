@@ -2631,17 +2631,12 @@ def print_mxw01_reference_slip(cart):
     if not cart:
         return False, "There is no reference slip to print."
 
-    if is_streamlit_cloud():
+    if is_streamlit_cloud() or os.name != "nt":
         return False, (
-            "Direct Bluetooth printing is unavailable on Streamlit Cloud. "
-            "Use the browser Print Reference Slip option instead."
+            "Browser printing is required on Streamlit Cloud. "
+            "Use the Print Reference Slip button in the browser."
         )
 
-    if os.name != "nt":
-        return False, (
-            "Direct MXW01 Bluetooth printing is available only on Windows. "
-            "Use browser printing on this device."
-        )
 
     try:
         result = _mxw01_print_async(cart)
@@ -2935,9 +2930,9 @@ def reference_slip_popup():
         unsafe_allow_html=True
     )
 
-    if is_streamlit_cloud():
+    if is_streamlit_cloud() or os.name != "nt":
         # --------------------------------------------------
-        # STREAMLIT CLOUD BROWSER PRINT
+        # STREAMLIT CLOUD / NON-WINDOWS BROWSER PRINT
         # --------------------------------------------------
         st.info(
             "☁️ Streamlit Cloud detected. Your Bluetooth printer is "
