@@ -3,6 +3,6 @@ pandas
 google-genai
 requests
 streamlit-mic-recorder
-ploty
+plotly
 bleak
 Pillow
