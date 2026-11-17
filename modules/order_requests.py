@@ -80,12 +80,85 @@ def log_order_audit(username, action, details):
 
 
 # ==========================================================
+# AUTOMATICALLY CANCEL UNCONFIRMED ORDERS AFTER 3 HOURS
+# ==========================================================
+
+def auto_cancel_expired_orders():
+    """
+    Cancel Pending orders that have been waiting for at least
+    3 hours. SQLite CURRENT_TIMESTAMP and datetime('now') both
+    use UTC, so the comparison uses the same time standard.
+    """
+    ensure_order_tables()
+    ensure_audit_table()
+
+    conn = get_db_connection()
+
+    try:
+        expired_orders = conn.execute(
+            """
+            SELECT id, request_number
+            FROM order_requests
+            WHERE status = 'Pending'
+              AND created_at IS NOT NULL
+              AND datetime(created_at) <= datetime('now', '-3 hours')
+            """
+        ).fetchall()
+
+        cancelled_count = 0
+
+        for order in expired_orders:
+            cursor = conn.execute(
+                """
+                UPDATE order_requests
+                SET status = 'Cancelled',
+                    reviewed_at = datetime('now'),
+                    reviewed_by = 'System (Auto-cancel)'
+                WHERE id = ?
+                  AND status = 'Pending'
+                  AND created_at IS NOT NULL
+                  AND datetime(created_at) <= datetime('now', '-3 hours')
+                """,
+                (order["id"],)
+            )
+
+            if cursor.rowcount > 0:
+                conn.execute(
+                    """
+                    INSERT INTO audit_trail (username, action, details)
+                    VALUES (?, ?, ?)
+                    """,
+                    (
+                        "System",
+                        "Automatically Cancelled Order",
+                        f"Order {order['request_number']} was automatically "
+                        f"cancelled because it was not approved or cancelled "
+                        f"within 3 hours."
+                    )
+                )
+                cancelled_count += 1
+
+        conn.commit()
+        return cancelled_count
+
+    except Exception:
+        conn.rollback()
+        raise
+
+    finally:
+        conn.close()
+
+
+# ==========================================================
 # GET ORDERS
 # ==========================================================
 
 def get_orders(status=None):
 
     ensure_order_tables()
+
+    # Automatically cancel requests that have been Pending for 3 hours.
+    auto_cancel_expired_orders()
 
     conn = get_db_connection()
 
