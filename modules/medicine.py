@@ -1,3 +1,4 @@
+
 import pandas as pd
 import streamlit as st
 
@@ -19,16 +20,196 @@ def render(user):
     conn = get_db_connection()
 
     # =====================================================
+    # EDIT MEDICINE POPUP
+    # =====================================================
+
+    @st.dialog("✏️ Edit Medicine", width="large")
+    def edit_medicine_popup(medicine_id):
+
+        medicine = conn.execute(
+            """
+            SELECT *
+            FROM medicines
+            WHERE id = ?
+            """,
+            (medicine_id,)
+        ).fetchone()
+
+        if not medicine:
+            st.error("Medicine not found.")
+            return
+
+        st.write("Update the medicine information below.")
+
+        categories = [
+            "Antibiotic",
+            "Analgesic",
+            "Antipyretic",
+            "Antihypertensive",
+            "Vitamins",
+            "Supplements",
+            "Other"
+        ]
+
+        current_category = medicine["category"]
+
+        if current_category not in categories:
+            current_category = "Other"
+
+        with st.form(
+            f"edit_medicine_form_{medicine_id}"
+        ):
+
+            edit_name = st.text_input(
+                "Brand / Trade Name",
+                value=str(medicine["name"] or "")
+            )
+
+            edit_generic = st.text_input(
+                "Generic Name",
+                value=str(medicine["generic_name"] or "")
+            )
+
+            edit_category = st.selectbox(
+                "Category",
+                categories,
+                index=categories.index(current_category)
+            )
+
+            edit_dosage = st.text_input(
+                "Dosage & Strength",
+                value=str(medicine["dosage_strength"] or "")
+            )
+
+            edit_price = st.number_input(
+                "Unit Price",
+                min_value=0.0,
+                value=float(medicine["price"] or 0),
+                step=0.01,
+                format="%.2f"
+            )
+
+            edit_description = st.text_area(
+                "Medicine Description & Usage",
+                value=str(medicine["description"] or "")
+            )
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                save = st.form_submit_button(
+                    "💾 Save Changes",
+                    use_container_width=True
+                )
+
+            with col2:
+                cancel = st.form_submit_button(
+                    "❌ Cancel",
+                    use_container_width=True
+                )
+
+            # ---------------------------------------------
+            # CANCEL
+            # ---------------------------------------------
+
+            if cancel:
+                st.rerun()
+
+            # ---------------------------------------------
+            # SAVE CHANGES
+            # ---------------------------------------------
+
+            if save:
+
+                if not edit_name.strip():
+
+                    st.warning(
+                        "⚠️ Please enter the medicine name."
+                    )
+
+                elif edit_price <= 0:
+
+                    st.warning(
+                        "⚠️ Please enter a valid price."
+                    )
+
+                else:
+
+                    duplicate = conn.execute(
+                        """
+                        SELECT id
+                        FROM medicines
+                        WHERE LOWER(TRIM(name)) =
+                              LOWER(TRIM(?))
+                        AND id != ?
+                        """,
+                        (
+                            edit_name.strip(),
+                            medicine_id
+                        )
+                    ).fetchone()
+
+                    if duplicate:
+
+                        st.error(
+                            "⚠️ Another medicine with this "
+                            "name already exists."
+                        )
+
+                    else:
+
+                        conn.execute(
+                            """
+                            UPDATE medicines
+                            SET
+                                name = ?,
+                                generic_name = ?,
+                                brand_name = ?,
+                                category = ?,
+                                dosage_strength = ?,
+                                price = ?,
+                                description = ?
+                            WHERE id = ?
+                            """,
+                            (
+                                edit_name.strip(),
+                                edit_generic.strip(),
+                                edit_name.strip(),
+                                edit_category,
+                                edit_dosage.strip(),
+                                edit_price,
+                                edit_description.strip(),
+                                medicine_id
+                            )
+                        )
+
+                        conn.commit()
+
+                        log_audit(
+                            user["id"],
+                            user["username"],
+                            "Updated Medicine",
+                            f"Medicine ID: {medicine_id}, "
+                            f"Name: {edit_name.strip()}"
+                        )
+
+                        st.success(
+                            "✅ Medicine updated successfully!"
+                        )
+
+                        st.rerun()
+
+    # =====================================================
     # MEDICINE CATALOG
     # =====================================================
 
     with tab1:
 
-        # =================================================
-        # SEARCH MEDICINES
-        # =================================================
-
         st.subheader("📋 Medicine Catalog")
+
+        # ---------------------------------------------
+        # SEARCH MEDICINES
+        # ---------------------------------------------
 
         search = st.text_input(
             "🔍 Search Medicine",
@@ -39,9 +220,9 @@ def render(user):
             key="medicine_search"
         )
 
-        # =================================================
+        # ---------------------------------------------
         # GET MEDICINES
-        # =================================================
+        # ---------------------------------------------
 
         df = pd.read_sql_query(
             """
@@ -60,9 +241,9 @@ def render(user):
             conn
         )
 
-        # =================================================
+        # ---------------------------------------------
         # FILTER SEARCH RESULTS
-        # =================================================
+        # ---------------------------------------------
 
         if not df.empty and search.strip():
 
@@ -77,7 +258,6 @@ def render(user):
                 "description"
             ]
 
-            # Create a combined searchable text
             search_mask = pd.Series(
                 False,
                 index=df.index
@@ -104,9 +284,9 @@ def render(user):
 
             df = df[search_mask].copy()
 
-        # =================================================
+        # ---------------------------------------------
         # SEARCH RESULT COUNT
-        # =================================================
+        # ---------------------------------------------
 
         if search.strip():
 
@@ -115,9 +295,9 @@ def render(user):
                 f"for **'{search.strip()}'**"
             )
 
-        # =================================================
+        # ---------------------------------------------
         # NO MEDICINES
-        # =================================================
+        # ---------------------------------------------
 
         if df.empty:
 
@@ -136,9 +316,9 @@ def render(user):
 
         else:
 
-            # =================================================
-            # ADMIN VIEW
-            # =================================================
+            # =========================================
+            # ADMINISTRATOR VIEW
+            # =========================================
 
             if user["role"] == "Administrator":
 
@@ -150,9 +330,9 @@ def render(user):
                             [6, 1, 1]
                         )
 
-                        # -------------------------------------
+                        # ---------------------------------
                         # MEDICINE DETAILS
-                        # -------------------------------------
+                        # ---------------------------------
 
                         with col1:
 
@@ -187,267 +367,45 @@ def render(user):
                                     f"{medicine['description']}"
                                 )
 
-                        # -------------------------------------
-                        # EDIT
-                        # -------------------------------------
+                        # ---------------------------------
+                        # EDIT BUTTON - POPUP
+                        # ---------------------------------
 
                         with col2:
 
                             if st.button(
                                 "✏️ Edit",
                                 key=f"edit_{medicine['id']}",
-                                help="Edit Medicine"
+                                help="Edit Medicine",
+                                use_container_width=True
                             ):
 
-                                st.session_state[
-                                    "edit_medicine_id"
-                                ] = int(medicine["id"])
-
-                                st.session_state.pop(
-                                    "delete_medicine_id",
-                                    None
+                                edit_medicine_popup(
+                                    int(medicine["id"])
                                 )
 
-                                st.rerun()
-
-                        # -------------------------------------
-                        # DELETE
-                        # -------------------------------------
+                        # ---------------------------------
+                        # DELETE BUTTON
+                        # ---------------------------------
 
                         with col3:
 
                             if st.button(
                                 "🗑️ Delete",
                                 key=f"delete_{medicine['id']}",
-                                help="Delete Medicine"
+                                help="Delete Medicine",
+                                use_container_width=True
                             ):
 
                                 st.session_state[
                                     "delete_medicine_id"
                                 ] = int(medicine["id"])
 
-                                st.session_state.pop(
-                                    "edit_medicine_id",
-                                    None
-                                )
-
                                 st.rerun()
 
-                # =================================================
-                # EDIT MEDICINE
-                # =================================================
-
-                edit_id = st.session_state.get(
-                    "edit_medicine_id"
-                )
-
-                if edit_id:
-
-                    medicine_data = df[
-                        df["id"] == edit_id
-                    ]
-
-                    if not medicine_data.empty:
-
-                        medicine = medicine_data.iloc[0]
-
-                        st.markdown("---")
-
-                        st.subheader(
-                            "✏️ Edit Medicine"
-                        )
-
-                        with st.form(
-                            "edit_medicine_form"
-                        ):
-
-                            edit_name = st.text_input(
-                                "Brand / Trade Name",
-                                value=str(
-                                    medicine["name"] or ""
-                                )
-                            )
-
-                            edit_generic = st.text_input(
-                                "Generic Name",
-                                value=str(
-                                    medicine["generic_name"] or ""
-                                )
-                            )
-
-                            categories = [
-                                "Antibiotic",
-                                "Analgesic",
-                                "Antipyretic",
-                                "Antihypertensive",
-                                "Vitamins",
-                                "Supplements",
-                                "Other"
-                            ]
-
-                            current_category = (
-                                medicine["category"]
-                            )
-
-                            if current_category not in categories:
-
-                                current_category = "Other"
-
-                            edit_category = st.selectbox(
-                                "Category",
-                                categories,
-                                index=categories.index(
-                                    current_category
-                                )
-                            )
-
-                            edit_dosage = st.text_input(
-                                "Dosage & Strength",
-                                value=str(
-                                    medicine["dosage_strength"] or ""
-                                )
-                            )
-
-                            edit_price = st.number_input(
-                                "Unit Price",
-                                min_value=0.0,
-                                value=float(
-                                    medicine["price"]
-                                ),
-                                step=0.01,
-                                format="%.2f"
-                            )
-
-                            edit_description = st.text_area(
-                                "Medicine Description & Usage",
-                                value=str(
-                                    medicine["description"] or ""
-                                )
-                            )
-
-                            col1, col2 = st.columns(2)
-
-                            with col1:
-
-                                save = st.form_submit_button(
-                                    "💾 Save Changes",
-                                    use_container_width=True
-                                )
-
-                            with col2:
-
-                                cancel = st.form_submit_button(
-                                    "❌ Cancel",
-                                    use_container_width=True
-                                )
-
-                            # -------------------------------------
-                            # CANCEL
-                            # -------------------------------------
-
-                            if cancel:
-
-                                st.session_state.pop(
-                                    "edit_medicine_id",
-                                    None
-                                )
-
-                                st.rerun()
-
-                            # -------------------------------------
-                            # SAVE
-                            # -------------------------------------
-
-                            if save:
-
-                                if not edit_name.strip():
-
-                                    st.warning(
-                                        "⚠️ Please enter the "
-                                        "medicine name."
-                                    )
-
-                                elif edit_price <= 0:
-
-                                    st.warning(
-                                        "⚠️ Please enter a "
-                                        "valid price."
-                                    )
-
-                                else:
-
-                                    duplicate = conn.execute(
-                                        """
-                                        SELECT id
-                                        FROM medicines
-                                        WHERE LOWER(name) =
-                                              LOWER(?)
-                                        AND id != ?
-                                        """,
-                                        (
-                                            edit_name.strip(),
-                                            edit_id
-                                        )
-                                    ).fetchone()
-
-                                    if duplicate:
-
-                                        st.error(
-                                            "⚠️ Another medicine "
-                                            "with this name already exists."
-                                        )
-
-                                    else:
-
-                                        conn.execute(
-                                            """
-                                            UPDATE medicines
-                                            SET
-                                                name = ?,
-                                                generic_name = ?,
-                                                brand_name = ?,
-                                                category = ?,
-                                                dosage_strength = ?,
-                                                price = ?,
-                                                description = ?
-                                            WHERE id = ?
-                                            """,
-                                            (
-                                                edit_name.strip(),
-                                                edit_generic.strip(),
-                                                edit_name.strip(),
-                                                edit_category,
-                                                edit_dosage.strip(),
-                                                edit_price,
-                                                edit_description.strip(),
-                                                edit_id
-                                            )
-                                        )
-
-                                        conn.commit()
-
-                                        log_audit(
-                                            user["id"],
-                                            user["username"],
-                                            "Updated Medicine",
-                                            f"Medicine ID: {edit_id}, "
-                                            f"Name: {edit_name.strip()}"
-                                        )
-
-                                        st.session_state.pop(
-                                            "edit_medicine_id",
-                                            None
-                                        )
-
-                                        st.success(
-                                            "✅ Medicine updated successfully!"
-                                        )
-
-                                        st.rerun()
-
-                # =================================================
-                # DELETE MEDICINE
-                # =================================================
+                # =========================================
+                # DELETE MEDICINE CONFIRMATION
+                # =========================================
 
                 delete_id = st.session_state.get(
                     "delete_medicine_id"
@@ -478,9 +436,9 @@ def render(user):
 
                         col1, col2 = st.columns(2)
 
-                        # -----------------------------------------
+                        # ---------------------------------
                         # CONFIRM DELETE
-                        # -----------------------------------------
+                        # ---------------------------------
 
                         with col1:
 
@@ -543,9 +501,9 @@ def render(user):
 
                                     st.rerun()
 
-                        # -----------------------------------------
+                        # ---------------------------------
                         # CANCEL DELETE
-                        # -----------------------------------------
+                        # ---------------------------------
 
                         with col2:
 
@@ -562,9 +520,16 @@ def render(user):
 
                                 st.rerun()
 
-            # =================================================
-            # PHARMACIST / STAFF / CUSTOMER
-            # =================================================
+                    else:
+
+                        st.session_state.pop(
+                            "delete_medicine_id",
+                            None
+                        )
+
+            # =========================================
+            # PHARMACIST / STAFF / CUSTOMER VIEW
+            # =========================================
 
             else:
 
@@ -582,8 +547,7 @@ def render(user):
                 display_df["price"] = (
                     display_df["price"]
                     .apply(
-                        lambda x:
-                        f"₱{float(x):,.2f}"
+                        lambda x: f"₱{float(x):,.2f}"
                     )
                 )
 
@@ -599,9 +563,7 @@ def render(user):
 
     with tab2:
 
-        st.subheader(
-            "➕ Add New Medicine"
-        )
+        st.subheader("➕ Add New Medicine")
 
         with st.form(
             "medicine_form",
@@ -673,9 +635,9 @@ def render(user):
                     clean_generic = generic.strip()
                     clean_dosage = dosage.strip()
 
-                    # =========================================
+                    # ---------------------------------
                     # CHECK DUPLICATE MEDICINE
-                    # =========================================
+                    # ---------------------------------
 
                     existing = conn.execute(
                         """
@@ -687,20 +649,20 @@ def render(user):
                             dosage_strength,
                             price
                         FROM medicines
-                        WHERE LOWER(TRIM(name))
-                              = LOWER(TRIM(?))
+                        WHERE LOWER(TRIM(name)) =
+                              LOWER(TRIM(?))
                         AND LOWER(
                             TRIM(
                                 COALESCE(generic_name, '')
                             )
-                        )
-                            = LOWER(TRIM(?))
+                        ) =
+                            LOWER(TRIM(?))
                         AND LOWER(
                             TRIM(
                                 COALESCE(dosage_strength, '')
                             )
-                        )
-                            = LOWER(TRIM(?))
+                        ) =
+                            LOWER(TRIM(?))
                         """,
                         (
                             clean_name,
@@ -709,9 +671,9 @@ def render(user):
                         )
                     ).fetchone()
 
-                    # =========================================
+                    # ---------------------------------
                     # MEDICINE ALREADY EXISTS
-                    # =========================================
+                    # ---------------------------------
 
                     if existing:
 
@@ -735,9 +697,9 @@ The medicine was **not added again**.
 """
                         )
 
-                    # =========================================
+                    # ---------------------------------
                     # ADD NEW MEDICINE
-                    # =========================================
+                    # ---------------------------------
 
                     else:
 
