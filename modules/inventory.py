@@ -368,204 +368,211 @@ def render(user):
 
     with tab_stock_out:
 
-        st.subheader("📤 Remove Medicine Stock")
-
+        st.subheader("📤 Stock Out")
         st.caption(
-            "Remove medicine quantities from the pharmacy inventory."
+            "Tap or select a medicine from the inventory cards, "
+            "enter the quantity to remove, then record the Stock Out."
         )
-
         st.divider()
 
         if med_dict:
 
-            with st.form("stock_out_form"):
+            # --------------------------------------------------
+            # GET CURRENT STOCK FOR EACH MEDICINE
+            # --------------------------------------------------
 
-                # ------------------------------------------
-                # MEDICINE
-                # ------------------------------------------
+            stock_cards = pd.read_sql_query(
+                """
+                SELECT
+                    m.id AS medicine_id,
+                    m.name AS medicine_name,
+                    COALESCE(SUM(ib.quantity), 0) AS current_stock
+                FROM medicines m
+                LEFT JOIN inventory_batches ib
+                    ON ib.medicine_id = m.id
+                GROUP BY m.id, m.name
+                ORDER BY m.name
+                """,
+                conn
+            )
 
-                medicine = st.selectbox(
-                    "💊 Medicine",
-                    list(med_dict),
-                    key="stock_out_medicine"
-                )
+            st.markdown("#### 💊 Select a Medicine")
 
-                # ------------------------------------------
-                # QUANTITY
-                # ------------------------------------------
+            # Keep the selected medicine between Streamlit reruns.
+            selected_medicine_id = st.session_state.get(
+                "stock_out_selected_medicine_id"
+            )
 
-                quantity = st.number_input(
-                    "📦 Quantity to Remove",
-                    min_value=1,
-                    step=1,
-                    value=1,
-                    key="stock_out_quantity"
-                )
+            # Display each medicine as a selectable inventory card.
+            card_columns = st.columns(3)
 
-                # ------------------------------------------
-                # REFERENCE
-                # ------------------------------------------
+            for index, medicine_row in stock_cards.iterrows():
 
-                reference = st.text_input(
-                    "🧾 Reference Number / Order Number",
-                    placeholder="Example: SO-2026-0001",
-                    key="stock_out_reference"
-                )
+                medicine_id = int(medicine_row["medicine_id"])
+                medicine_name = str(medicine_row["medicine_name"])
+                current_stock = int(medicine_row["current_stock"] or 0)
 
-                # ------------------------------------------
-                # NOTES
-                # ------------------------------------------
+                with card_columns[index % 3]:
 
-                notes = st.text_input(
-                    "📝 Reason / Notes",
-                    key="stock_out_notes"
-                )
+                    with st.container(border=True):
 
-                # ------------------------------------------
-                # SUBMIT
-                # ------------------------------------------
+                        st.markdown(f"**💊 {medicine_name}**")
+                        st.metric("Available Stock", current_stock)
 
-                submit = st.form_submit_button(
-                    "📤 Record Stock Out",
-                    use_container_width=True
-                )
+                        if current_stock <= 0:
+                            st.caption("🔴 Out of stock")
+                        elif current_stock <= 10:
+                            st.caption("🟠 Low stock")
+                        else:
+                            st.caption("🟢 Available")
+
+                        is_selected = selected_medicine_id == medicine_id
+
+                        button_label = (
+                            "✓ Selected"
+                            if is_selected
+                            else "Select Medicine"
+                        )
+
+                        if st.button(
+                            button_label,
+                            key=f"select_stock_out_{medicine_id}",
+                            use_container_width=True,
+                            disabled=(current_stock <= 0)
+                        ):
+                            st.session_state[
+                                "stock_out_selected_medicine_id"
+                            ] = medicine_id
+                            st.session_state[
+                                "stock_out_quantity"
+                            ] = 1
+                            st.rerun()
+
+            # --------------------------------------------------
+            # STOCK OUT FORM FOR THE SELECTED MEDICINE
+            # --------------------------------------------------
+
+            selected_row = stock_cards[
+                stock_cards["medicine_id"] == selected_medicine_id
+            ]
+
+            if not selected_row.empty:
+
+                selected_medicine = selected_row.iloc[0]
+                med_id = int(selected_medicine["medicine_id"])
+                medicine = str(selected_medicine["medicine_name"])
+                current_stock = int(selected_medicine["current_stock"] or 0)
+
+                st.divider()
+                st.markdown(f"#### 📤 Stock Out — {medicine}")
+                st.info(f"Available quantity: **{current_stock}**")
+
+                with st.form("stock_out_selected_form"):
+
+                    quantity = st.number_input(
+                        "📦 Quantity to Remove",
+                        min_value=1,
+                        max_value=max(1, current_stock),
+                        step=1,
+                        value=1,
+                        key="stock_out_quantity_input"
+                    )
+
+                    reference = st.text_input(
+                        "🧾 Reference Number / Order Number",
+                        placeholder="Example: SO-2026-0001",
+                        key="stock_out_reference"
+                    )
+
+                    notes = st.text_input(
+                        "📝 Reason / Notes",
+                        key="stock_out_notes"
+                    )
+
+                    submit = st.form_submit_button(
+                        "📤 Stock Out Now",
+                        use_container_width=True,
+                        type="primary"
+                    )
 
                 if submit:
 
-                    med_id = med_dict[
-                        medicine
-                    ]
-
-                    # ======================================
-                    # CURRENT STOCK
-                    # ======================================
-
+                    # Recheck stock immediately before deduction.
                     stock_result = conn.execute(
                         """
-                        SELECT
-                            COALESCE(
-                                SUM(quantity),
-                                0
-                            )
+                        SELECT COALESCE(SUM(quantity), 0)
                         FROM inventory_batches
                         WHERE medicine_id = ?
                         """,
                         (med_id,)
                     ).fetchone()
 
-                    current_stock = int(
-                        stock_result[0] or 0
-                    )
+                    latest_stock = int(stock_result[0] or 0)
 
-                    # ======================================
-                    # CHECK STOCK
-                    # ======================================
+                    if latest_stock <= 0:
+                        st.error("❌ This medicine is now out of stock.")
 
-                    if current_stock <= 0:
-
+                    elif int(quantity) > latest_stock:
                         st.error(
-                            f"""
-❌ Out of Stock
-
-💊 Medicine: {medicine}
-
-📦 Available Stock: 0
-"""
-                        )
-
-                    elif quantity > current_stock:
-
-                        st.error(
-                            f"""
-❌ Insufficient Stock
-
-💊 Medicine: {medicine}
-
-📦 Available Stock: {current_stock}
-
-📤 Requested Quantity: {quantity}
-"""
+                            f"❌ Insufficient stock. Available: {latest_stock}; "
+                            f"requested: {int(quantity)}."
                         )
 
                     else:
-
                         try:
+                            remaining = int(quantity)
 
-                            remaining = int(
-                                quantity
-                            )
-
-                            # ==================================
-                            # GET BATCHES
-                            # OLDEST EXPIRY FIRST
-                            # ==================================
-
+                            # FIFO: deduct from batches with earliest expiry first.
                             batches = pd.read_sql_query(
                                 """
-                                SELECT
-                                    id,
-                                    quantity,
-                                    expiration_date
+                                SELECT id, quantity, expiration_date
                                 FROM inventory_batches
                                 WHERE medicine_id = ?
-                                AND quantity > 0
-                                ORDER BY
-                                    expiration_date ASC
+                                  AND quantity > 0
+                                ORDER BY expiration_date ASC, id ASC
                                 """,
                                 conn,
                                 params=[med_id]
                             )
 
-                            # ==================================
-                            # DEDUCT STOCK
-                            # ==================================
-
-                            for _, row in batches.iterrows():
+                            for _, batch_row in batches.iterrows():
 
                                 if remaining <= 0:
                                     break
 
-                                batch_id = int(
-                                    row["id"]
-                                )
+                                batch_id = int(batch_row["id"])
+                                batch_quantity = int(batch_row["quantity"])
+                                deduct = min(remaining, batch_quantity)
 
-                                batch_quantity = int(
-                                    row["quantity"]
-                                )
-
-                                deduct = min(
-                                    remaining,
-                                    batch_quantity
-                                )
-
-                                conn.execute(
-                                    """
-                                    UPDATE inventory_batches
-                                    SET quantity =
-                                        quantity - ?
-                                    WHERE id = ?
-                                    """,
-                                    (
-                                        deduct,
-                                        batch_id
+                                if deduct > 0:
+                                    update_result = conn.execute(
+                                        """
+                                        UPDATE inventory_batches
+                                        SET quantity = quantity - ?
+                                        WHERE id = ?
+                                          AND quantity >= ?
+                                        """,
+                                        (deduct, batch_id, deduct)
                                     )
+
+                                    if update_result.rowcount != 1:
+                                        raise Exception(
+                                            "Stock changed during the transaction. "
+                                            "Please refresh and try again."
+                                        )
+
+                                    remaining -= deduct
+
+                            if remaining > 0:
+                                raise Exception(
+                                    "Unable to deduct the requested quantity "
+                                    "from available inventory batches."
                                 )
-
-                                remaining -= deduct
-
-                            # ==================================
-                            # TRANSACTION NOTES
-                            # ==================================
 
                             transaction_notes = (
-                                f"Reference: "
-                                f"{reference.strip()} | "
-                                f"{notes.strip()}"
+                                f"Reference: {reference.strip() or 'N/A'} | "
+                                f"{notes.strip() or 'No notes'}"
                             )
-
-                            # ==================================
-                            # RECORD STOCK OUT
-                            # ==================================
 
                             conn.execute(
                                 """
@@ -588,61 +595,40 @@ def render(user):
                                 )
                             )
 
-                            # ==================================
-                            # COMMIT
-                            # ==================================
-
                             conn.commit()
-
-                            # ==================================
-                            # NEW STOCK
-                            # ==================================
 
                             new_stock_result = conn.execute(
                                 """
-                                SELECT
-                                    COALESCE(
-                                        SUM(quantity),
-                                        0
-                                    )
+                                SELECT COALESCE(SUM(quantity), 0)
                                 FROM inventory_batches
                                 WHERE medicine_id = ?
                                 """,
                                 (med_id,)
                             ).fetchone()
 
-                            new_stock = int(
-                                new_stock_result[0] or 0
-                            )
-
-                            # ==================================
-                            # AUDIT
-                            # ==================================
+                            new_stock = int(new_stock_result[0] or 0)
 
                             log_audit(
                                 user["id"],
                                 user["username"],
                                 "Stock Out",
                                 (
-                                    f"{medicine}: "
-                                    f"-{quantity} | "
-                                    f"Reference: "
-                                    f"{reference} | "
-                                    f"Remaining: "
-                                    f"{new_stock}"
+                                    f"{medicine}: -{int(quantity)} | "
+                                    f"Reference: {reference.strip() or 'N/A'} | "
+                                    f"Remaining: {new_stock}"
                                 )
                             )
 
-                            # ==================================
-                            # POPUP
-                            # ==================================
+                            st.session_state.pop(
+                                "stock_out_selected_medicine_id",
+                                None
+                            )
 
                             _set_success_notification(
                                 (
-                                    f"Stock Out Already Done — "
-                                    f"{medicine} -{quantity} "
-                                    f"successfully removed. "
-                                    f"Remaining stock: {new_stock}"
+                                    f"Stock Out completed — {medicine} "
+                                    f"-{int(quantity)}. Remaining stock: "
+                                    f"{new_stock}."
                                 ),
                                 icon="📤"
                             )
@@ -650,17 +636,18 @@ def render(user):
                             st.rerun()
 
                         except Exception as e:
-
                             conn.rollback()
+                            st.error(f"❌ Stock Out failed: {e}")
 
-                            st.error(
-                                f"❌ Stock Out failed: {e}"
-                            )
+            else:
+                st.caption(
+                    "Select an available medicine card above to enter "
+                    "the quantity for Stock Out."
+                )
 
         else:
-
             st.warning(
-                "⚠️ No medicines available."
+                "⚠️ No medicines available. Please add a medicine first."
             )
 
     # ======================================================
