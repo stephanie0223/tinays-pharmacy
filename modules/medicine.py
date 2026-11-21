@@ -26,178 +26,186 @@ def render(user):
     @st.dialog("✏️ Edit Medicine", width="large")
     def edit_medicine_popup(medicine_id):
 
-        medicine = conn.execute(
-            """
-            SELECT *
-            FROM medicines
-            WHERE id = ?
-            """,
-            (medicine_id,)
-        ).fetchone()
+        # IMPORTANT: Use a NEW connection for the dialog
+        dialog_conn = get_db_connection()
 
-        if not medicine:
-            st.error("Medicine not found.")
-            return
+        try:
 
-        st.write("Update the medicine information below.")
+            medicine = dialog_conn.execute(
+                """
+                SELECT *
+                FROM medicines
+                WHERE id = ?
+                """,
+                (medicine_id,)
+            ).fetchone()
 
-        categories = [
-            "Antibiotic",
-            "Analgesic",
-            "Antipyretic",
-            "Antihypertensive",
-            "Vitamins",
-            "Supplements",
-            "Other"
-        ]
+            if not medicine:
+                st.error("Medicine not found.")
+                return
 
-        current_category = medicine["category"]
+            st.write("Update the medicine information below.")
 
-        if current_category not in categories:
-            current_category = "Other"
+            categories = [
+                "Antibiotic",
+                "Analgesic",
+                "Antipyretic",
+                "Antihypertensive",
+                "Vitamins",
+                "Supplements",
+                "Other"
+            ]
 
-        with st.form(
-            f"edit_medicine_form_{medicine_id}"
-        ):
+            current_category = medicine["category"]
 
-            edit_name = st.text_input(
-                "Brand / Trade Name",
-                value=str(medicine["name"] or "")
-            )
+            if current_category not in categories:
+                current_category = "Other"
 
-            edit_generic = st.text_input(
-                "Generic Name",
-                value=str(medicine["generic_name"] or "")
-            )
+            with st.form(
+                f"edit_medicine_form_{medicine_id}"
+            ):
 
-            edit_category = st.selectbox(
-                "Category",
-                categories,
-                index=categories.index(current_category)
-            )
-
-            edit_dosage = st.text_input(
-                "Dosage & Strength",
-                value=str(medicine["dosage_strength"] or "")
-            )
-
-            edit_price = st.number_input(
-                "Unit Price",
-                min_value=0.0,
-                value=float(medicine["price"] or 0),
-                step=0.01,
-                format="%.2f"
-            )
-
-            edit_description = st.text_area(
-                "Medicine Description & Usage",
-                value=str(medicine["description"] or "")
-            )
-
-            col1, col2 = st.columns(2)
-
-            with col1:
-                save = st.form_submit_button(
-                    "💾 Save Changes",
-                    use_container_width=True
+                edit_name = st.text_input(
+                    "Brand / Trade Name",
+                    value=str(medicine["name"] or "")
                 )
 
-            with col2:
-                cancel = st.form_submit_button(
-                    "❌ Cancel",
-                    use_container_width=True
+                edit_generic = st.text_input(
+                    "Generic Name",
+                    value=str(medicine["generic_name"] or "")
                 )
 
-            # ---------------------------------------------
-            # CANCEL
-            # ---------------------------------------------
+                edit_category = st.selectbox(
+                    "Category",
+                    categories,
+                    index=categories.index(current_category)
+                )
 
-            if cancel:
-                st.rerun()
+                edit_dosage = st.text_input(
+                    "Dosage & Strength",
+                    value=str(medicine["dosage_strength"] or "")
+                )
 
-            # ---------------------------------------------
-            # SAVE CHANGES
-            # ---------------------------------------------
+                edit_price = st.number_input(
+                    "Unit Price",
+                    min_value=0.0,
+                    value=float(medicine["price"] or 0),
+                    step=0.01,
+                    format="%.2f"
+                )
 
-            if save:
+                edit_description = st.text_area(
+                    "Medicine Description & Usage",
+                    value=str(medicine["description"] or "")
+                )
 
-                if not edit_name.strip():
+                col1, col2 = st.columns(2)
 
-                    st.warning(
-                        "⚠️ Please enter the medicine name."
+                with col1:
+                    save = st.form_submit_button(
+                        "💾 Save Changes",
+                        use_container_width=True
                     )
 
-                elif edit_price <= 0:
-
-                    st.warning(
-                        "⚠️ Please enter a valid price."
+                with col2:
+                    cancel = st.form_submit_button(
+                        "❌ Cancel",
+                        use_container_width=True
                     )
 
-                else:
+                # -----------------------------------------
+                # CANCEL
+                # -----------------------------------------
 
-                    duplicate = conn.execute(
-                        """
-                        SELECT id
-                        FROM medicines
-                        WHERE LOWER(TRIM(name)) =
-                              LOWER(TRIM(?))
-                        AND id != ?
-                        """,
-                        (
-                            edit_name.strip(),
-                            medicine_id
+                if cancel:
+                    st.rerun()
+
+                # -----------------------------------------
+                # SAVE CHANGES
+                # -----------------------------------------
+
+                if save:
+
+                    if not edit_name.strip():
+
+                        st.warning(
+                            "⚠️ Please enter the medicine name."
                         )
-                    ).fetchone()
 
-                    if duplicate:
+                    elif edit_price <= 0:
 
-                        st.error(
-                            "⚠️ Another medicine with this "
-                            "name already exists."
+                        st.warning(
+                            "⚠️ Please enter a valid price."
                         )
 
                     else:
 
-                        conn.execute(
+                        duplicate = dialog_conn.execute(
                             """
-                            UPDATE medicines
-                            SET
-                                name = ?,
-                                generic_name = ?,
-                                brand_name = ?,
-                                category = ?,
-                                dosage_strength = ?,
-                                price = ?,
-                                description = ?
-                            WHERE id = ?
+                            SELECT id
+                            FROM medicines
+                            WHERE LOWER(TRIM(name)) =
+                                  LOWER(TRIM(?))
+                            AND id != ?
                             """,
                             (
                                 edit_name.strip(),
-                                edit_generic.strip(),
-                                edit_name.strip(),
-                                edit_category,
-                                edit_dosage.strip(),
-                                edit_price,
-                                edit_description.strip(),
                                 medicine_id
                             )
-                        )
+                        ).fetchone()
 
-                        conn.commit()
+                        if duplicate:
 
-                        log_audit(
-                            user["id"],
-                            user["username"],
-                            "Updated Medicine",
-                            f"Medicine ID: {medicine_id}, "
-                            f"Name: {edit_name.strip()}"
-                        )
+                            st.error(
+                                "⚠️ Another medicine with this "
+                                "name already exists."
+                            )
 
-                        st.success(
-                            "✅ Medicine updated successfully!"
-                        )
+                        else:
 
-                        st.rerun()
+                            dialog_conn.execute(
+                                """
+                                UPDATE medicines
+                                SET
+                                    name = ?,
+                                    generic_name = ?,
+                                    brand_name = ?,
+                                    category = ?,
+                                    dosage_strength = ?,
+                                    price = ?,
+                                    description = ?
+                                WHERE id = ?
+                                """,
+                                (
+                                    edit_name.strip(),
+                                    edit_generic.strip(),
+                                    edit_name.strip(),
+                                    edit_category,
+                                    edit_dosage.strip(),
+                                    edit_price,
+                                    edit_description.strip(),
+                                    medicine_id
+                                )
+                            )
+
+                            dialog_conn.commit()
+
+                            log_audit(
+                                user["id"],
+                                user["username"],
+                                "Updated Medicine",
+                                f"Medicine ID: {medicine_id}, "
+                                f"Name: {edit_name.strip()}"
+                            )
+
+                            st.success(
+                                "✅ Medicine updated successfully!"
+                            )
+
+                            st.rerun()
+
+        finally:
+            dialog_conn.close()
 
     # =====================================================
     # MEDICINE CATALOG
@@ -207,9 +215,7 @@ def render(user):
 
         st.subheader("📋 Medicine Catalog")
 
-        # ---------------------------------------------
         # SEARCH MEDICINES
-        # ---------------------------------------------
 
         search = st.text_input(
             "🔍 Search Medicine",
@@ -220,9 +226,7 @@ def render(user):
             key="medicine_search"
         )
 
-        # ---------------------------------------------
         # GET MEDICINES
-        # ---------------------------------------------
 
         df = pd.read_sql_query(
             """
@@ -241,9 +245,7 @@ def render(user):
             conn
         )
 
-        # ---------------------------------------------
         # FILTER SEARCH RESULTS
-        # ---------------------------------------------
 
         if not df.empty and search.strip():
 
@@ -284,9 +286,7 @@ def render(user):
 
             df = df[search_mask].copy()
 
-        # ---------------------------------------------
         # SEARCH RESULT COUNT
-        # ---------------------------------------------
 
         if search.strip():
 
@@ -295,9 +295,7 @@ def render(user):
                 f"for **'{search.strip()}'**"
             )
 
-        # ---------------------------------------------
         # NO MEDICINES
-        # ---------------------------------------------
 
         if df.empty:
 
@@ -316,9 +314,9 @@ def render(user):
 
         else:
 
-            # =========================================
+            # =============================================
             # ADMINISTRATOR VIEW
-            # =========================================
+            # =============================================
 
             if user["role"] == "Administrator":
 
@@ -330,9 +328,7 @@ def render(user):
                             [6, 1, 1]
                         )
 
-                        # ---------------------------------
                         # MEDICINE DETAILS
-                        # ---------------------------------
 
                         with col1:
 
@@ -367,9 +363,7 @@ def render(user):
                                     f"{medicine['description']}"
                                 )
 
-                        # ---------------------------------
-                        # EDIT BUTTON - POPUP
-                        # ---------------------------------
+                        # EDIT BUTTON
 
                         with col2:
 
@@ -384,9 +378,7 @@ def render(user):
                                     int(medicine["id"])
                                 )
 
-                        # ---------------------------------
                         # DELETE BUTTON
-                        # ---------------------------------
 
                         with col3:
 
@@ -436,9 +428,7 @@ def render(user):
 
                         col1, col2 = st.columns(2)
 
-                        # ---------------------------------
                         # CONFIRM DELETE
-                        # ---------------------------------
 
                         with col1:
 
@@ -501,9 +491,7 @@ def render(user):
 
                                     st.rerun()
 
-                        # ---------------------------------
                         # CANCEL DELETE
-                        # ---------------------------------
 
                         with col2:
 
@@ -527,9 +515,9 @@ def render(user):
                             None
                         )
 
-            # =========================================
+            # =============================================
             # PHARMACIST / STAFF / CUSTOMER VIEW
-            # =========================================
+            # =============================================
 
             else:
 
@@ -545,8 +533,7 @@ def render(user):
                 ].copy()
 
                 display_df["price"] = (
-                    display_df["price"]
-                    .apply(
+                    display_df["price"].apply(
                         lambda x: f"₱{float(x):,.2f}"
                     )
                 )
@@ -635,9 +622,7 @@ def render(user):
                     clean_generic = generic.strip()
                     clean_dosage = dosage.strip()
 
-                    # ---------------------------------
                     # CHECK DUPLICATE MEDICINE
-                    # ---------------------------------
 
                     existing = conn.execute(
                         """
@@ -671,9 +656,7 @@ def render(user):
                         )
                     ).fetchone()
 
-                    # ---------------------------------
                     # MEDICINE ALREADY EXISTS
-                    # ---------------------------------
 
                     if existing:
 
@@ -697,9 +680,7 @@ The medicine was **not added again**.
 """
                         )
 
-                    # ---------------------------------
                     # ADD NEW MEDICINE
-                    # ---------------------------------
 
                     else:
 
