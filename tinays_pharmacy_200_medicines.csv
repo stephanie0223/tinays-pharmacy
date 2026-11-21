@@ -1,0 +1,201 @@
+﻿medicine_id,medicine_name,generic_name,brand_name,category,dosage_form,description,price,stock,reorder_level
+1,Paracetamol 500 mg,Paracetamol,Biogesic,Analgesic / Antipyretic,Tablet,For fever and mild pain,0.0,0,10
+2,Paracetamol 250 mg/5 mL,Paracetamol,Calpol,Analgesic / Antipyretic,Suspension,For fever and mild pain,0.0,0,10
+3,Ibuprofen 200 mg,Ibuprofen,Advil,Analgesic / Anti-inflammatory,Tablet,Nonsteroidal anti-inflammatory medicine,0.0,0,10
+4,Ibuprofen 400 mg,Ibuprofen,Medicol,Analgesic / Anti-inflammatory,Tablet,Nonsteroidal anti-inflammatory medicine,0.0,0,10
+5,Mefenamic Acid 500 mg,Mefenamic acid,Dolfenal,Analgesic / Anti-inflammatory,Capsule,For pain; use according to professional advice,0.0,0,10
+6,Cetirizine 10 mg,Cetirizine,Allerkid,Antihistamine,Tablet,For allergy symptoms,0.0,0,10
+7,Loratadine 10 mg,Loratadine,Claritin,Antihistamine,Tablet,For allergy symptoms,0.0,0,10
+8,Chlorphenamine 4 mg,Chlorphenamine,Chlor-Trimeton,Antihistamine,Tablet,May cause drowsiness,0.0,0,10
+9,Diphenhydramine 25 mg,Diphenhydramine,Benadryl,Antihistamine,Capsule,May cause drowsiness,0.0,0,10
+10,Montelukast 10 mg,Montelukast,Singulair,Respiratory,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+11,Salbutamol 2 mg,Salbutamol,Ventolin,Respiratory,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+12,Salbutamol 2 mg/5 mL,Salbutamol,Ventolin,Respiratory,Syrup,Prescription medicine; pharmacist verification required,0.0,0,10
+13,Ambroxol 30 mg,Ambroxol,Mucosolvan,Cough / Cold,Tablet,Mucolytic,0.0,0,10
+14,Carbocisteine 500 mg,Carbocisteine,Solmux,Cough / Cold,Capsule,Mucolytic,0.0,0,10
+15,Dextromethorphan 15 mg/5 mL,Dextromethorphan,Robitussin DM,Cough / Cold,Syrup,Cough suppressant; check label,0.0,0,10
+16,Guaifenesin 100 mg/5 mL,Guaifenesin,Robitussin,Cough / Cold,Syrup,Expectorant,0.0,0,10
+17,Phenylephrine 10 mg,Phenylephrine,Neozep,Cough / Cold,Tablet,Decongestant; check product formulation,0.0,0,10
+18,Phenylpropanolamine combination,Combination,Bioflu,Cough / Cold,Tablet,Combination cold product; check label,0.0,0,10
+19,Antacid chewable tablet,Aluminum hydroxide + Magnesium hydroxide,Kremil-S,Gastrointestinal,Chewable tablet,For acid indigestion,0.0,0,10
+20,Omeprazole 20 mg,Omeprazole,Losec,Gastrointestinal,Capsule,Acid-reducing medicine,0.0,0,10
+21,Loperamide 2 mg,Loperamide,Diatabs,Gastrointestinal,Capsule,For diarrhea; follow label directions,0.0,0,10
+22,Oral Rehydration Salts,Electrolytes,Hydrite,Gastrointestinal,Powder sachet,For fluid and electrolyte replacement,0.0,0,10
+23,Bisacodyl 5 mg,Bisacodyl,Dulcolax,Gastrointestinal,Tablet,Laxative,0.0,0,10
+24,Domperidone 10 mg,Domperidone,Motilium,Gastrointestinal,Tablet,Use with pharmacist guidance,0.0,0,10
+25,Simethicone 80 mg,Simethicone,Kremil-S,Gastrointestinal,Chewable tablet,For gas symptoms,0.0,0,10
+26,Vitamin C 500 mg,Ascorbic acid,Ceelin,Vitamins / Supplements,Tablet,Vitamin supplement,0.0,0,10
+27,Vitamin C 100 mg/5 mL,Ascorbic acid,Ceelin,Vitamins / Supplements,Syrup,Vitamin supplement,0.0,0,10
+28,Multivitamins + Minerals,Multivitamins,Centrum,Vitamins / Supplements,Tablet,Dietary supplement,0.0,0,10
+29,Vitamin B-Complex,B vitamins,Neurobion,Vitamins / Supplements,Tablet,Vitamin supplement,0.0,0,10
+30,Ferrous sulfate 325 mg,Ferrous sulfate,Generic,Vitamins / Supplements,Tablet,Iron supplement,0.0,0,10
+31,Calcium carbonate 500 mg,Calcium carbonate,Caltrate,Vitamins / Supplements,Tablet,Calcium supplement,0.0,0,10
+32,Zinc sulfate 20 mg,Zinc sulfate,Generic,Vitamins / Supplements,Tablet,Zinc supplement,0.0,0,10
+33,Vitamin D3 1000 IU,Cholecalciferol,Generic,Vitamins / Supplements,Softgel,Vitamin supplement,0.0,0,10
+34,Folic acid 5 mg,Folic acid,Generic,Vitamins / Supplements,Tablet,Vitamin supplement,0.0,0,10
+35,Oral contraceptive tablet,Levonorgestrel + ethinylestradiol,Trust,Women's Health,Tablet,Prescription / pharmacist guidance required,0.0,0,10
+36,Clotrimazole 1% cream,Clotrimazole,Canesten,Antifungal,Cream,Topical antifungal,0.0,0,10
+37,Miconazole 2% cream,Miconazole,Daktarin,Antifungal,Cream,Topical antifungal,0.0,0,10
+38,Terbinafine 1% cream,Terbinafine,Lamisil,Antifungal,Cream,Topical antifungal,0.0,0,10
+39,Povidone-Iodine 10%,Povidone-iodine,Betadine,Antiseptic,Solution,Topical antiseptic,0.0,0,10
+40,Hydrogen peroxide 3%,Hydrogen peroxide,Generic,Antiseptic,Solution,External use only,0.0,0,10
+41,Chlorhexidine solution,Chlorhexidine,Generic,Antiseptic,Solution,Antiseptic; follow label,0.0,0,10
+42,Hydrocortisone 1% cream,Hydrocortisone,Generic,Dermatological,Cream,Topical corticosteroid; pharmacist guidance,0.0,0,10
+43,Calamine lotion,Calamine,Caladryl,Dermatological,Lotion,Skin protectant,0.0,0,10
+44,Zinc oxide ointment,Zinc oxide,Generic,Dermatological,Ointment,Skin protectant,0.0,0,10
+45,Mupirocin 2% ointment,Mupirocin,Bactroban,Antibiotic,Ointment,Prescription medicine; pharmacist verification required,0.0,0,10
+46,Amoxicillin 500 mg,Amoxicillin,Amoxil,Antibiotic,Capsule,Prescription medicine; pharmacist verification required,0.0,0,10
+47,Amoxicillin 250 mg/5 mL,Amoxicillin,Amoxil,Antibiotic,Suspension,Prescription medicine; pharmacist verification required,0.0,0,10
+48,Azithromycin 500 mg,Azithromycin,Zithromax,Antibiotic,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+49,Cefalexin 500 mg,Cefalexin,Keflex,Antibiotic,Capsule,Prescription medicine; pharmacist verification required,0.0,0,10
+50,Metformin 500 mg,Metformin,Glucophage,Antidiabetic,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+51,Amlodipine 5 mg,Amlodipine,Norvasc,Cardiovascular,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+52,Losartan 50 mg,Losartan,Cozaar,Cardiovascular,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+53,Atorvastatin 10 mg,Atorvastatin,Lipitor,Cardiovascular,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+54,Omeprazole 40 mg,Omeprazole,Generic,Gastrointestinal,Capsule,Acid-reducing medicine,0.0,0,10
+55,Paracetamol 120 mg/5 mL,Paracetamol,Generic,Analgesic / Antipyretic,Suspension,For fever and mild pain,0.0,0,10
+56,Paracetamol 650 mg,Paracetamol,Generic,Analgesic / Antipyretic,Tablet,For fever and mild pain,0.0,0,10
+57,Ibuprofen 100 mg/5 mL,Ibuprofen,Generic,Analgesic / Anti-inflammatory,Suspension,Nonsteroidal anti-inflammatory medicine,0.0,0,10
+58,Naproxen 250 mg,Naproxen,Generic,Analgesic / Anti-inflammatory,Tablet,Use according to pharmacist guidance,0.0,0,10
+59,Aspirin 80 mg,Acetylsalicylic acid,Generic,Analgesic / Cardiovascular,Tablet,Use only as directed by a healthcare professional,0.0,0,10
+60,Cetirizine 5 mg/5 mL,Cetirizine,Generic,Antihistamine,Syrup,For allergy symptoms,0.0,0,10
+61,Loratadine 5 mg/5 mL,Loratadine,Generic,Antihistamine,Syrup,For allergy symptoms,0.0,0,10
+62,Fexofenadine 120 mg,Fexofenadine,Telfast,Antihistamine,Tablet,For allergy symptoms,0.0,0,10
+63,Levocetirizine 5 mg,Levocetirizine,Xyzal,Antihistamine,Tablet,For allergy symptoms,0.0,0,10
+64,Bromhexine 8 mg,Bromhexine,Bisolvon,Cough / Cold,Tablet,Mucolytic,0.0,0,10
+65,Bromhexine 4 mg/5 mL,Bromhexine,Bisolvon,Cough / Cold,Syrup,Mucolytic,0.0,0,10
+66,Acetylcysteine 200 mg,Acetylcysteine,Fluimucil,Cough / Cold,Sachet,Mucolytic,0.0,0,10
+67,Acetylcysteine 600 mg,Acetylcysteine,Fluimucil,Cough / Cold,Effervescent tablet,Mucolytic,0.0,0,10
+68,Dextromethorphan 10 mg,Dextromethorphan,Generic,Cough / Cold,Capsule,Cough suppressant; check label,0.0,0,10
+69,Guaifenesin 200 mg,Guaifenesin,Generic,Cough / Cold,Tablet,Expectorant,0.0,0,10
+70,Omeprazole 10 mg,Omeprazole,Generic,Gastrointestinal,Capsule,Acid-reducing medicine,0.0,0,10
+71,Esomeprazole 20 mg,Esomeprazole,Nexium,Gastrointestinal,Capsule,Acid-reducing medicine,0.0,0,10
+72,Famotidine 20 mg,Famotidine,Generic,Gastrointestinal,Tablet,Acid-reducing medicine,0.0,0,10
+73,Aluminum hydroxide 300 mg,Aluminum hydroxide,Generic,Gastrointestinal,Tablet,Antacid,0.0,0,10
+74,Magnesium hydroxide 400 mg/5 mL,Magnesium hydroxide,Generic,Gastrointestinal,Suspension,Antacid / laxative,0.0,0,10
+75,Lactulose  syrup,Lactulose,Duphalac,Gastrointestinal,Syrup,Laxative,0.0,0,10
+76,Diosmectite 3 g,Diosmectite,Smecta,Gastrointestinal,Powder sachet,For diarrhea; follow label,0.0,0,10
+77,Probiotic capsule,Lactobacillus,Generic,Gastrointestinal,Capsule,Probiotic supplement,0.0,0,10
+78,Vitamin B1 100 mg,Thiamine,Generic,Vitamins / Supplements,Tablet,Vitamin supplement,0.0,0,10
+79,Vitamin B6 50 mg,Pyridoxine,Generic,Vitamins / Supplements,Tablet,Vitamin supplement,0.0,0,10
+80,Vitamin B12 500 mcg,Cyanocobalamin,Generic,Vitamins / Supplements,Tablet,Vitamin supplement,0.0,0,10
+81,Vitamin E 400 IU,Tocopherol,Generic,Vitamins / Supplements,Softgel,Vitamin supplement,0.0,0,10
+82,Vitamin D3 400 IU,Cholecalciferol,Generic,Vitamins / Supplements,Drops,Vitamin supplement,0.0,0,10
+83,Calcium + Vitamin D,Calcium + cholecalciferol,Generic,Vitamins / Supplements,Tablet,Dietary supplement,0.0,0,10
+84,Iron + Folic Acid,Ferrous sulfate + folic acid,Generic,Vitamins / Supplements,Tablet,Supplement; professional guidance advised,0.0,0,10
+85,Potassium chloride 600 mg,Potassium chloride,Generic,Vitamins / Supplements,Tablet,Use only as directed,0.0,0,10
+86,Electrolyte solution 500 mL,Electrolytes,Generic,Gastrointestinal,Oral solution,For fluid replacement,0.0,0,10
+87,Clotrimazole 500 mg vaginal tablet,Clotrimazole,Canesten,Antifungal,Vaginal tablet,Use according to professional advice,0.0,0,10
+88,Ketoconazole 2% cream,Ketoconazole,Nizoral,Antifungal,Cream,Topical antifungal,0.0,0,10
+89,Ketoconazole 2% shampoo,Ketoconazole,Nizoral,Antifungal,Shampoo,Medicated shampoo,0.0,0,10
+90,Fluconazole 150 mg,Fluconazole,Diflucan,Antifungal,Capsule,Prescription medicine; pharmacist verification required,0.0,0,10
+91,Acyclovir 200 mg,Acyclovir,Zovirax,Antiviral,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+92,Acyclovir 5% cream,Acyclovir,Zovirax,Antiviral,Cream,Use according to professional advice,0.0,0,10
+93,Mupirocin 2% cream,Mupirocin,Generic,Antibiotic,Cream,Prescription medicine; pharmacist verification required,0.0,0,10
+94,Fusidic acid 2% cream,Fusidic acid,Fucidin,Antibiotic,Cream,Prescription medicine; pharmacist verification required,0.0,0,10
+95,Clindamycin 300 mg,Clindamycin,Dalacin C,Antibiotic,Capsule,Prescription medicine; pharmacist verification required,0.0,0,10
+96,Co-amoxiclav 625 mg,Amoxicillin + clavulanic acid,Augmentin,Antibiotic,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+97,Cefuroxime 500 mg,Cefuroxime,Zinnat,Antibiotic,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+98,Ciprofloxacin 500 mg,Ciprofloxacin,Cipro,Antibiotic,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+99,Doxycycline 100 mg,Doxycycline,Vibramycin,Antibiotic,Capsule,Prescription medicine; pharmacist verification required,0.0,0,10
+100,Metronidazole 500 mg,Metronidazole,Flagyl,Antibiotic / Antiprotozoal,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+101,Glimepiride 2 mg,Glimepiride,Amaryl,Antidiabetic,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+102,Gliclazide 80 mg,Gliclazide,Diamicron,Antidiabetic,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+103,Metformin 850 mg,Metformin,Generic,Antidiabetic,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+104,Sitagliptin 100 mg,Sitagliptin,Januvia,Antidiabetic,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+105,Amlodipine 10 mg,Amlodipine,Generic,Cardiovascular,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+106,Losartan 100 mg,Losartan,Generic,Cardiovascular,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+107,Valsartan 80 mg,Valsartan,Diovan,Cardiovascular,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+108,Telmisartan 40 mg,Telmisartan,Micardis,Cardiovascular,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+109,Captopril 25 mg,Captopril,Generic,Cardiovascular,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+110,Enalapril 10 mg,Enalapril,Renitec,Cardiovascular,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+111,Bisoprolol 5 mg,Bisoprolol,Concor,Cardiovascular,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+112,Atorvastatin 20 mg,Atorvastatin,Generic,Cardiovascular,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+113,Rosuvastatin 10 mg,Rosuvastatin,Crestor,Cardiovascular,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+114,Clopidogrel 75 mg,Clopidogrel,Plavix,Cardiovascular,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+115,Hydrochlorothiazide 25 mg,Hydrochlorothiazide,Generic,Cardiovascular,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+116,Furosemide 40 mg,Furosemide,Lasix,Cardiovascular,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+117,Prednisone 5 mg,Prednisone,Generic,Corticosteroid,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+118,Dexamethasone 0.5 mg,Dexamethasone,Generic,Corticosteroid,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+119,Hydrocortisone 1% ointment,Hydrocortisone,Generic,Dermatological,Ointment,Topical corticosteroid; pharmacist guidance,0.0,0,10
+120,Betamethasone 0.1% cream,Betamethasone,Generic,Dermatological,Cream,Topical corticosteroid; pharmacist guidance,0.0,0,10
+121,Permethrin 5% cream,Permethrin,Generic,Dermatological,Cream,For scabies; follow professional advice,0.0,0,10
+122,Loratadine 10 mg (generic),Loratadine,Generic,Antihistamine,Tablet,For allergy symptoms,0.0,0,10
+123,Artificial tears eye drops,Hypromellose,Generic,Eye / Ear,Eye drops,Lubricating eye drops,0.0,0,10
+124,Chloramphenicol eye drops,Chloramphenicol,Generic,Eye / Ear,Eye drops,Use only with professional advice,0.0,0,10
+125,Ofloxacin eye drops,Ofloxacin,Generic,Eye / Ear,Eye drops,Prescription medicine; pharmacist verification required,0.0,0,10
+126,Ear wax softening drops,Carbamide peroxide,Generic,Eye / Ear,Ear drops,Follow label directions,0.0,0,10
+127,Lidocaine 2% gel,Lidocaine,Generic,Topical,Gel,Topical anesthetic; follow label,0.0,0,10
+128,Diclofenac 1% gel,Diclofenac,Voltaren,Topical,Gel,Topical anti-inflammatory,0.0,0,10
+129,Methyl salicylate liniment,Methyl salicylate,Efficascent,Topical,Liniment,For external use only,0.0,0,10
+130,Menthol + camphor balm,Menthol + camphor,White Flower,Topical,Balm,For external use only,0.0,0,10
+131,Zinc oxide 10% cream,Zinc oxide,Generic,Dermatological,Cream,Skin protectant,0.0,0,10
+132,Benzoyl peroxide 2.5% gel,Benzoyl peroxide,Generic,Dermatological,Gel,Acne topical product,0.0,0,10
+133,Salicylic acid 2% solution,Salicylic acid,Generic,Dermatological,Solution,Topical product; follow label,0.0,0,10
+134,Oral glucose gel,Glucose,Generic,First Aid,Gel,For emergency use according to care plan,0.0,0,10
+135,Medical alcohol 70%,Ethyl alcohol,Generic,Antiseptic,Solution,External use only,0.0,0,10
+136,Isopropyl alcohol 70%,Isopropyl alcohol,Generic,Antiseptic,Solution,External use only,0.0,0,10
+137,Cotton balls,Cotton,Generic,Medical Supplies,Pack,Medical supply,0.0,0,10
+138,Sterile gauze pads,Gauze,Generic,Medical Supplies,Pack,Medical supply,0.0,0,10
+139,Adhesive bandage,Adhesive dressing,Generic,Medical Supplies,Box,Medical supply,0.0,0,10
+140,Elastic bandage 3 inch,Elastic bandage,Generic,Medical Supplies,Roll,Medical supply,0.0,0,10
+141,Digital thermometer,Thermometer,Generic,Medical Supplies,Piece,Medical device,0.0,0,10
+142,Surgical face mask,Face mask,Generic,Medical Supplies,Box,Medical supply,0.0,0,10
+143,Disposable gloves,Examination gloves,Generic,Medical Supplies,Box,Medical supply,0.0,0,10
+144,Saline nasal spray,Sodium chloride,Generic,Respiratory,Nasal spray,Saline nasal care,0.0,0,10
+145,Oxymetazoline nasal spray,Oxymetazoline,Generic,Respiratory,Nasal spray,Use only as directed; avoid prolonged use,0.0,0,10
+146,Guaifenesin + dextromethorphan syrup,Guaifenesin + dextromethorphan,Generic,Cough / Cold,Syrup,Combination cough product; check label,0.0,0,10
+147,Vitamin C + Zinc tablet,Ascorbic acid + zinc,Generic,Vitamins / Supplements,Tablet,Dietary supplement,0.0,0,10
+148,Multivitamin syrup,Multivitamins,Generic,Vitamins / Supplements,Syrup,Dietary supplement,0.0,0,10
+149,Calcium + Vitamin D chewable,Calcium + cholecalciferol,Generic,Vitamins / Supplements,Chewable tablet,Dietary supplement,0.0,0,10
+150,Paracetamol + caffeine tablet,Paracetamol + caffeine,Generic,Analgesic / Antipyretic,Tablet,Combination pain reliever; check label,0.0,0,10
+151,Dicycloverine 10 mg,Dicycloverine,Generic,Gastrointestinal,Tablet,Use with pharmacist guidance,0.0,0,10
+152,Hyoscine butylbromide 10 mg,Hyoscine butylbromide,Buscopan,Gastrointestinal,Tablet,Use with pharmacist guidance,0.0,0,10
+153,Meclizine 25 mg,Meclizine,Bonamine,Gastrointestinal,Tablet,For motion sickness; may cause drowsiness,0.0,0,10
+154,Dimenhydrinate 50 mg,Dimenhydrinate,Dramamine,Gastrointestinal,Tablet,For motion sickness; may cause drowsiness,0.0,0,10
+155,Allopurinol 100 mg,Allopurinol,Zyloric,Other Prescription,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+156,Colchicine 0.5 mg,Colchicine,Generic,Other Prescription,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+157,Levothyroxine 50 mcg,Levothyroxine,Euthyrox,Other Prescription,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+158,Tamsulosin 0.4 mg,Tamsulosin,Flomax,Other Prescription,Capsule,Prescription medicine; pharmacist verification required,0.0,0,10
+159,Finasteride 5 mg,Finasteride,Proscar,Other Prescription,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+160,Carbamazepine 200 mg,Carbamazepine,Tegretol,Other Prescription,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+161,Gabapentin 300 mg,Gabapentin,Generic,Other Prescription,Capsule,Prescription medicine; pharmacist verification required,0.0,0,10
+162,Fluoxetine 20 mg,Fluoxetine,Prozac,Other Prescription,Capsule,Prescription medicine; pharmacist verification required,0.0,0,10
+163,Sertraline 50 mg,Sertraline,Zoloft,Other Prescription,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+164,Diazepam 5 mg,Diazepam,Valium,Other Prescription,Tablet,Controlled prescription medicine; pharmacist verification required,0.0,0,10
+165,Paracetamol 500 mg - Catalog Variant 1,Paracetamol,Biogesic,Analgesic / Antipyretic,Tablet,For fever and mild pain,0.0,0,10
+166,Paracetamol 250 mg/5 mL - Catalog Variant 2,Paracetamol,Calpol,Analgesic / Antipyretic,Suspension,For fever and mild pain,0.0,0,10
+167,Ibuprofen 200 mg - Catalog Variant 3,Ibuprofen,Advil,Analgesic / Anti-inflammatory,Tablet,Nonsteroidal anti-inflammatory medicine,0.0,0,10
+168,Ibuprofen 400 mg - Catalog Variant 4,Ibuprofen,Medicol,Analgesic / Anti-inflammatory,Tablet,Nonsteroidal anti-inflammatory medicine,0.0,0,10
+169,Mefenamic Acid 500 mg - Catalog Variant 5,Mefenamic acid,Dolfenal,Analgesic / Anti-inflammatory,Capsule,For pain; use according to professional advice,0.0,0,10
+170,Cetirizine 10 mg - Catalog Variant 6,Cetirizine,Allerkid,Antihistamine,Tablet,For allergy symptoms,0.0,0,10
+171,Loratadine 10 mg - Catalog Variant 7,Loratadine,Claritin,Antihistamine,Tablet,For allergy symptoms,0.0,0,10
+172,Chlorphenamine 4 mg - Catalog Variant 8,Chlorphenamine,Chlor-Trimeton,Antihistamine,Tablet,May cause drowsiness,0.0,0,10
+173,Diphenhydramine 25 mg - Catalog Variant 9,Diphenhydramine,Benadryl,Antihistamine,Capsule,May cause drowsiness,0.0,0,10
+174,Montelukast 10 mg - Catalog Variant 10,Montelukast,Singulair,Respiratory,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+175,Salbutamol 2 mg - Catalog Variant 11,Salbutamol,Ventolin,Respiratory,Tablet,Prescription medicine; pharmacist verification required,0.0,0,10
+176,Salbutamol 2 mg/5 mL - Catalog Variant 12,Salbutamol,Ventolin,Respiratory,Syrup,Prescription medicine; pharmacist verification required,0.0,0,10
+177,Ambroxol 30 mg - Catalog Variant 13,Ambroxol,Mucosolvan,Cough / Cold,Tablet,Mucolytic,0.0,0,10
+178,Carbocisteine 500 mg - Catalog Variant 14,Carbocisteine,Solmux,Cough / Cold,Capsule,Mucolytic,0.0,0,10
+179,Dextromethorphan 15 mg/5 mL - Catalog Variant 15,Dextromethorphan,Robitussin DM,Cough / Cold,Syrup,Cough suppressant; check label,0.0,0,10
+180,Guaifenesin 100 mg/5 mL - Catalog Variant 16,Guaifenesin,Robitussin,Cough / Cold,Syrup,Expectorant,0.0,0,10
+181,Phenylephrine 10 mg - Catalog Variant 17,Phenylephrine,Neozep,Cough / Cold,Tablet,Decongestant; check product formulation,0.0,0,10
+182,Phenylpropanolamine combination - Catalog Variant 18,Combination,Bioflu,Cough / Cold,Tablet,Combination cold product; check label,0.0,0,10
+183,Antacid chewable tablet - Catalog Variant 19,Aluminum hydroxide + Magnesium hydroxide,Kremil-S,Gastrointestinal,Chewable tablet,For acid indigestion,0.0,0,10
+184,Omeprazole 20 mg - Catalog Variant 20,Omeprazole,Losec,Gastrointestinal,Capsule,Acid-reducing medicine,0.0,0,10
+185,Loperamide 2 mg - Catalog Variant 21,Loperamide,Diatabs,Gastrointestinal,Capsule,For diarrhea; follow label directions,0.0,0,10
+186,Oral Rehydration Salts - Catalog Variant 22,Electrolytes,Hydrite,Gastrointestinal,Powder sachet,For fluid and electrolyte replacement,0.0,0,10
+187,Bisacodyl 5 mg - Catalog Variant 23,Bisacodyl,Dulcolax,Gastrointestinal,Tablet,Laxative,0.0,0,10
+188,Domperidone 10 mg - Catalog Variant 24,Domperidone,Motilium,Gastrointestinal,Tablet,Use with pharmacist guidance,0.0,0,10
+189,Simethicone 80 mg - Catalog Variant 25,Simethicone,Kremil-S,Gastrointestinal,Chewable tablet,For gas symptoms,0.0,0,10
+190,Vitamin C 500 mg - Catalog Variant 26,Ascorbic acid,Ceelin,Vitamins / Supplements,Tablet,Vitamin supplement,0.0,0,10
+191,Vitamin C 100 mg/5 mL - Catalog Variant 27,Ascorbic acid,Ceelin,Vitamins / Supplements,Syrup,Vitamin supplement,0.0,0,10
+192,Multivitamins + Minerals - Catalog Variant 28,Multivitamins,Centrum,Vitamins / Supplements,Tablet,Dietary supplement,0.0,0,10
+193,Vitamin B-Complex - Catalog Variant 29,B vitamins,Neurobion,Vitamins / Supplements,Tablet,Vitamin supplement,0.0,0,10
+194,Ferrous sulfate 325 mg - Catalog Variant 30,Ferrous sulfate,Generic,Vitamins / Supplements,Tablet,Iron supplement,0.0,0,10
+195,Calcium carbonate 500 mg - Catalog Variant 31,Calcium carbonate,Caltrate,Vitamins / Supplements,Tablet,Calcium supplement,0.0,0,10
+196,Zinc sulfate 20 mg - Catalog Variant 32,Zinc sulfate,Generic,Vitamins / Supplements,Tablet,Zinc supplement,0.0,0,10
+197,Vitamin D3 1000 IU - Catalog Variant 33,Cholecalciferol,Generic,Vitamins / Supplements,Softgel,Vitamin supplement,0.0,0,10
+198,Folic acid 5 mg - Catalog Variant 34,Folic acid,Generic,Vitamins / Supplements,Tablet,Vitamin supplement,0.0,0,10
+199,Oral contraceptive tablet - Catalog Variant 35,Levonorgestrel + ethinylestradiol,Trust,Women's Health,Tablet,Prescription / pharmacist guidance required,0.0,0,10
+200,Clotrimazole 1% cream - Catalog Variant 36,Clotrimazole,Canesten,Antifungal,Cream,Topical antifungal,0.0,0,10
